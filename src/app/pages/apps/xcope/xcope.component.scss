@@ -1,0 +1,95 @@
+.custom-navbar {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  background-color: #343a40;
+  padding-top: 10px;
+}
+.custom-navbar::after {
+  content: ' ';
+  clear: both;
+  display: table;
+}
+
+.hide-image {
+  position: absolute;
+  top: 5.5rem;
+  left: 2rem;
+  width: 9rem;
+}
+
+.hide-canvas {
+  position: absolute;
+  top: 8rem;
+  left: 2rem;
+  width: 9rem;
+}
+
+.main-tool {
+  width: 4.5rem;
+  right: 2rem;
+  top: 5.5rem;
+  position: absolute;
+  background-color: white;
+  border-radius: 1em;
+  z-index: 900;
+}
+.line-tool {
+  width: 4.5rem;
+  right: 7rem;
+  top: 5.5rem;
+  position: absolute;
+  background-color: white;
+  display: none;
+  z-index: 700;
+  border-radius: 1em;
+}
+.magic-wand-tool {
+  width: 4.5rem;
+  right: 7rem;
+  top: 8.8rem;
+  position: absolute;
+  background-color: white;
+  display: none;
+  z-index: 700;
+  border-radius: 1em;
+}
+
+@for $i from 1 to 3 {
+  .arrow-#{$i} {
+    position: absolute;
+    top: ($i - 1) * 55px + 112px;
+    right: 6.5rem;
+    height: 1rem;
+    border-left: 7px solid #737373;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+  }
+}
+
+img:hover { opacity: .5; transform: scale(1.2, 1.2); cursor: pointer; }
+
+mat-select {
+  float: right;
+  width: 7vw;
+  background-color: white;
+  font-size: 16px;
+  border-radius: 5px;
+}
+.arrow-image {
+  margin-right:10px;
+  border: 1px solid white;
+  border-radius:5px;
+  float: right;
+}
+.arrow-image:hover {
+  opacity: .8;
+  transform: scale(1, 1);
+  cursor: pointer;
+}
+.mat-select-trigger ng-tns-c250-3 {
+  padding: 25px;
+  border-radius: 5px;
+}
+.ng-tns-c250-3 { padding: 5px; }
+span.ng-tns-c250-3 { padding-left: 5px; }

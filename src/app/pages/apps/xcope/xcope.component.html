@@ -1,0 +1,76 @@
+<div class="h-full flex flex-col">
+  <canvas #canvas width="100" height="100"></canvas>
+  <canvas #canvas_background></canvas>
+  <img #background src="../../../../assets/img/background.jpg" alt="background"
+    style="display: none; width: 100%; height: 100%;">
+
+  <button mat-raised-button class="hide-image" color="accent" (click)="openTool('hide_image')">HIDE IMAGE</button>
+  <button mat-raised-button class="hide-canvas" color="accent" (click)="openTool('hide_canvas')">HIDE CANVAS</button>
+
+  <div class="custom-navbar">
+    <a href="#" style="float: left; color: white"><span
+        style="font-size: 18px; font-weight: bold;">&nbsp;Xcope</span><br>&nbsp;Estimating Software Calculation</a>
+    <button mat-button [matMenuTriggerFor]="menu" style="float: right;"><img
+        src="../../../../assets/img/icons/settings.ico" alt="settings" (click)="openTool('settings')"></button>
+    <mat-select name="unit" [(value)]="selected_unit">
+      <mat-option value="cm">centimeters</mat-option>
+      <mat-option value="m">meters</mat-option>
+      <mat-option value="in">inches</mat-option>
+    </mat-select>
+    <img class="arrow-image" src="../../../../assets/img/icons/up.ico" alt="arrow up">
+    <img class="arrow-image" src="../../../../assets/img/icons/down.ico" alt="arrow down">
+    <h3 style="float: right; color: white; padding-top: 5px;">Scale&nbsp;&nbsp;</h3>
+  </div>
+  <mat-menu #menu="matMenu">
+    <button mat-menu-item (click)="openTool('clear_canvas')">Clear Canvas</button>
+    <button mat-menu-item (click)="openTool('save')">Save</button>
+    <button mat-menu-item (click)="openTool('export')">Export</button>
+    <button mat-menu-item (click)="openTool('print')">Print</button>
+    <button mat-menu-item (click)="file_dialog.click()">Import</button>
+    <input type="file" #file_dialog style="display: none" (change)="openTool('import', $event)">
+    <button mat-menu-item (click)="openTool('show_map')">Show Map</button>
+  </mat-menu>
+
+  <mat-card class="main-tool">
+    <mat-card-content #main_tool_card class="d-flex flex-column">
+      <img src="../../../../assets/img/icons/line_tool.png" #line_tool alt="line_tool" (click)="openTool('line_tool')"
+        class="p-1 mb-3" matTooltip="line" matTooltipPosition="left" matTooltipClass="tooltip">
+      <img src="../../../../assets/img/icons/magic_wand.png" #magic_wand_tool alt="magic_wand"
+        (click)="openTool('magic_wand_tool')" class="p-1 mb-3" matTooltip="magic wand" matTooltipPosition="left"
+        matTooltipClass="tooltip">
+      <img src="../../../../assets/img/icons/pen.png" #pen_tool alt="pen" (click)="openTool('pen')" class="p-1 mb-3"
+        matTooltip="pen" matTooltipPosition="left" matTooltipClass="tooltip">
+      <img src="../../../../assets/img/icons/zoom_in.png" #zoom_in_tool alt="zoom_in" (click)="openTool('zoom_in')"
+        class="p-1 mb-3" matTooltip="zoom in" matTooltipPosition="left" matTooltipClass="tooltip">
+      <img src="../../../../assets/img/icons/zoom_out.png" #zoom_out_tool alt="zoom_out" (click)="openTool('zoom_out')"
+        class="p-1 mb-3" matTooltip="zoom out" matTooltipPosition="left" matTooltipClass="tooltip">
+      <img src="../../../../assets/img/icons/hand.png" #hand_tool alt="hand" (click)="openTool('hand')" class="p-1 mb-3"
+        matTooltip="hand" matTooltipPosition="left" matTooltipClass="tooltip">
+      <img src="../../../../assets/img/icons/undo.png" #undo_tool alt="undo" (click)="openTool('undo')" class="p-1 mb-3"
+        matTooltip="undo" matTooltipPosition="left" matTooltipClass="tooltip">
+    </mat-card-content>
+  </mat-card>
+  <div class="arrow-1" [style.display]="line_tool_card_display ? 'block' : 'none'"></div>
+  <div class="arrow-2" [style.display]="magic_wand_tool_card_display ? 'block' : 'none'"></div>
+
+  <mat-card class="line-tool" #line_tool_card [style.display]="line_tool_card_display ? 'block' : 'none'">
+    <mat-card-content>
+      <img src="../../../../assets/img/icons/line_tool.png" #line_tool_line alt="line_tool" (click)="openTool('line')"
+        class="p-1 mb-3" matTooltip="line tool" matTooltipPosition="left" matTooltipClass="tooltip" />
+      <img src="../../../../assets/img/icons/rectangle.png" #line_tool_rectangle alt="rectangle"
+        (click)="openTool('rectangle')" class="p-1 mb-3" matTooltip="rectangle tool" matTooltipPosition="left"
+        matTooltipClass="tooltip" />
+      <img src="../../../../assets/img/icons/circle.png" #line_tool_circle alt="circle" (click)="openTool('circle')"
+        class="p-1 mb-3" matTooltip="circle tool" matTooltipPosition="left" matTooltipClass="tooltip" />
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="magic-wand-tool" #magic_wand_tool_card
+    [style.display]="magic_wand_tool_card_display ? 'block' : 'none'">
+    <mat-card-content>
+      <img src="../../../../assets/img/icons/magic_wand.png" #magic_wand_tool_magic alt="magic_wand_tool"
+        (click)="openTool('magic_wand')" class="p-1 mb-3" matTooltip="magic wand tool" matTooltipPosition="left"
+        matTooltipClass="tooltip" />
+    </mat-card-content>
+  </mat-card>
+</div>
