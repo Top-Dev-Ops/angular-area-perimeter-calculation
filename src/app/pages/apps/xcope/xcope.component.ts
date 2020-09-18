@@ -5,9 +5,9 @@ import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions } from '@angular/
 import { saveAs } from 'file-saver';
 
 export const tooltipDefaults: MatTooltipDefaultOptions = {
-  showDelay: 500,
-  hideDelay: 500,
-  touchendHideDelay: 500,
+  showDelay: 200,
+  hideDelay: 200,
+  touchendHideDelay: 200,
 };
 
 @Component({
@@ -19,37 +19,49 @@ export const tooltipDefaults: MatTooltipDefaultOptions = {
 
 export class XcopeComponent implements AfterViewInit {
 
+  /* html의 element들 */
   @ViewChild('canvas') canvasElement: ElementRef;
+  @ViewChild('canvas_background') sceneElement: ElementRef;
   @ViewChild('background') imgElement: ElementRef;
 
-  line_tool_card_display = false;
-  magic_wand_tool_card_display = false;
-
+  /* html의 element들로부터 얻어내는 객체변수들 */
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
+  private scene: HTMLCanvasElement;
+  private sceneCtx: CanvasRenderingContext2D;
   private rect = null;
-  private imageBackground = new Image();
 
+  /* html과 련결된 변수들(ng-model like) */
+  line_tool_card_display = false;       // line도구의 세부도구card현시상태를 반영
+  magic_wand_tool_card_display = false; // magic wand도구의 세부도구card현시상태를 반영
+  scale_factor = 5;                     // 지도의 축적상태(default값 1:5)
+  selected_unit = 'cm';                 // 지도의 단위(cm, m, in)
+
+  /* canvas에 대한 mouse사건들 */
   mousedown = null;
   mousemove = null;
   mouseup = null;
-
+  /* mousemove시 마우스가 눌리워져있는가를 검사하는 변수 */
   isMouseDown = false;
 
-  selected_tool = '';
-  perimeters = [];
-  origin_x = null; origin_y = null;
-  target_x = null; target_y = null;
-
-  selected_unit = 'cm';
+  /* controller에서 리용하는 변수들 */
+  selected_tool = '';               // 지금 선택된 도구의 이름. e.g. 'line', 'rectangle'...
+  perimeters = [];                  // polygon의 점들의 배렬
+  origin_x = null; origin_y = null; // 시작점-마우스를 눌렀을 때의 점위치
+  target_x = null; target_y = null; // 마감점-마우스를 놓았을 때의 점위치
 
   constructor() { }
 
+  /* 모든 변수의 초기화 */
   ngAfterViewInit() {
     this.canvas = this.canvasElement.nativeElement;
+    this.scene = this.sceneElement.nativeElement;
     this.canvas.width = window.innerWidth - 280; // 280: left sidebar너비
     this.canvas.height = window.innerHeight;
+    this.scene.width = window.innerWidth - 280;
+    this.scene.height = window.innerHeight;
     this.ctx = this.canvas.getContext('2d');
+    this.sceneCtx = this.scene.getContext('2d');
     this.rect = this.canvas.getBoundingClientRect();
   }
 
@@ -359,26 +371,21 @@ export class XcopeComponent implements AfterViewInit {
     }
   }
 
+  /* import메뉴를 눌러 배경화상선택후 화상을 읽어 화면에 현시 */
   readImage(event) {
-    console.log(event.target.files[0].name);
-    var width = this.imgElement.nativeElement.width;
-    var height = this.imgElement.nativeElement.height;
-    this.ctx.drawImage(this.imgElement.nativeElement, (this.rect.right - width - 280) / 2, (this.rect.bottom - height - 70) / 2);
-    // if (event.target.files && event.target.files[0]) {
-    //   var reader = new FileReader();
-    //   // reader.onload = e => {
-    //   //   console.log('화상 onload함수내부');
-    //   //   this.ctx.clearRect(0, 0, this.rect.left, this.rect.bottom);
-    //   //   this.imageBackground.src = Buffer.from(e.target.result).toString();
-    //   //   setTimeout(() => {
-    //   //     console.log('setTimeout함수내부');
-    //   //   }, 1000);
-    //   // }
-    //   reader.onload = () => {
-
-    //   }
-    //   reader.readAsDataURL(event.target.files[0]);
-    // }
+    console.log('배경화상화일: ' + event.target.files[0].name);
+    if (event.target.files && event.target.files[0]) {
+      var reader = new FileReader();
+      reader.onload = e => {
+        this.sceneCtx.clearRect(0, 0, this.rect.left, this.rect.bottom);
+        this.imgElement.nativeElement.src = e.target.result;
+        var width = this.imgElement.nativeElement.width;
+        var height = this.imgElement.nativeElement.height;
+        setTimeout(() => {
+          this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.rect.right - width - 280) / 2, (this.rect.bottom - height - 70) / 2);
+        }, 500);
+      }
+      reader.readAsDataURL(event.target.files[0]);
+    }
   }
 }
-

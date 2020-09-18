@@ -4,6 +4,7 @@
   width: 100%;
   background-color: #343a40;
   padding-top: 10px;
+  z-index: 1000;
 }
 .custom-navbar::after {
   content: ' ';
@@ -77,7 +78,7 @@ mat-select {
   border-radius: 5px;
 }
 .arrow-image {
-  margin-right:10px;
+  margin-right: 10px;
   border: 1px solid white;
   border-radius:5px;
   float: right;
@@ -87,9 +88,27 @@ mat-select {
   transform: scale(1, 1);
   cursor: pointer;
 }
-.mat-select-trigger ng-tns-c250-3 {
+.scale-text {
+  float: right;
+  width: 5vw;
+  height: 3.6vh;
+  padding: 10px 5px;
+  margin-right:5px;
+  box-sizing: border-box;
+  border-radius: 0px 5px 5px 0px;
+}
+span.scale-span {
+  float: right;
+  background-color: white;
+  opacity: .9;
+  padding: 6px;
+  font-size: 15px;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+.mat-select-trigger {
   padding: 25px;
   border-radius: 5px;
 }
+.mat-select-value { padding:5px; }
 .ng-tns-c250-3 { padding: 5px; }
-span.ng-tns-c250-3 { padding-left: 5px; }
