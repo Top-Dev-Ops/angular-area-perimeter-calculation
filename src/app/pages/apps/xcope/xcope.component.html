@@ -4,8 +4,9 @@
   <img #background src="../../../../assets/img/background.jpg" alt="background"
     style="display: none; width: 100%; height: 100%;">
 
-  <button mat-raised-button class="hide-image" color="accent" (click)="openTool('hide_image')">HIDE IMAGE</button>
-  <button mat-raised-button class="hide-canvas" color="accent" (click)="openTool('hide_canvas')">HIDE CANVAS</button>
+  <button mat-raised-button class="hide-image" color="accent" (click)="openTool('hide_image')">{{hide_image}}</button>
+  <button mat-raised-button class="hide-canvas" color="accent"
+    (click)="openTool('hide_canvas')">{{hide_canvas}}</button>
 
   <div class="custom-navbar">
     <a href="#" style="float: left; color: white"><span
