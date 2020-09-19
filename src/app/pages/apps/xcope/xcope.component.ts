@@ -41,14 +41,18 @@ export class XcopeComponent implements AfterViewInit {
   mousedown = null;
   mousemove = null;
   mouseup = null;
+  mousewheel = null;
   /* mousemove시 마우스가 눌리워져있는가를 검사하는 변수 */
   isMouseDown = false;
+  isDraggable = false;
 
   /* controller에서 리용하는 변수들 */
   selected_tool = '';               // 지금 선택된 도구의 이름. e.g. 'line', 'rectangle'...
   perimeters = [];                  // polygon의 점들의 배렬
   origin_x = null; origin_y = null; // 시작점-마우스를 눌렀을 때의 점위치
   target_x = null; target_y = null; // 마감점-마우스를 놓았을 때의 점위치
+  zoom_scale = 1;                   // 배경화상의 확대/축소비률(mouse wheel사건시 변화)
+  drag_start;
 
   constructor() { }
 
@@ -115,6 +119,11 @@ export class XcopeComponent implements AfterViewInit {
           this.origin_x = x;
           this.origin_y = y;
           break;
+        case 'hand':
+          console.log('hand도구선택후 canvas에 대한 mousedown');
+          this.isDraggable = true;
+          this.drag_start = this.transformedPoint(res.offsetX || x, res.offsetY || y);
+          break;
       }
     });
 
@@ -130,16 +139,23 @@ export class XcopeComponent implements AfterViewInit {
         case 'circle':
           this.isMouseDown = false;
           break;
+        case 'hand':
+          this.isDraggable = false;
+          this.drag_start = null;
+          console.log('hand도구선택후 canvas에 대한 mouseup');
+          break;
       }
     });
 
     /* canvas에 대한 mousemove */
     this.mousemove = fromEvent(canvasEl, 'mousemove').subscribe((res: MouseEvent) => {
+      var x = res.clientX - this.rect.left;
+      var y = res.clientY - this.rect.top;
       switch (_selected_tool) {
         case 'rectangle':
           if (this.isMouseDown) {
-            this.target_x = res.clientX - this.rect.left;
-            this.target_y = res.clientY - this.rect.top;
+            this.target_x = x;
+            this.target_y = y;
             this.perimeters = [];
             this.perimeters.push({ x: this.origin_x, y: this.origin_y });
             this.perimeters.push({ x: this.target_x, y: this.target_y });
@@ -148,8 +164,8 @@ export class XcopeComponent implements AfterViewInit {
           break;
         case 'pen':
           if (this.isMouseDown) {
-            this.perimeters.push({ x: res.clientX - this.rect.left, y: res.clientY - this.rect.top });
-            if (Math.abs(res.clientX - this.rect.left - this.perimeters[0].x) <= 3 && Math.abs(res.clientY - this.rect.top - this.perimeters[0].y) <= 3) {
+            this.perimeters.push({ x: x, y: y });
+            if (Math.abs(x - this.perimeters[0].x) <= 3 && Math.abs(y - this.perimeters[0].y) <= 3) {
               this.draw(true, _selected_tool);
             } else {
               this.draw(false, _selected_tool);
@@ -158,11 +174,56 @@ export class XcopeComponent implements AfterViewInit {
           break;
         case 'circle':
           if (this.isMouseDown) {
-            this.target_x = res.clientX - this.rect.left;
-            this.target_y = res.clientY - this.rect.top;
+            this.target_x = x;
+            this.target_y = y;
             this.draw(false, _selected_tool);
           }
           break;
+        case 'hand':
+          console.log('hand도구선택후 mousemove');
+          if (this.drag_start) {
+            var pt = this.transformedPoint(res.offsetX || x, res.offsetY || y);
+            this.sceneCtx.translate(pt.x - this.drag_start.x, pt.y - this.drag_start.y);
+            this.redraw();
+          }
+          break;
+      }
+    });
+
+    /* canvas에 대한 mousewheel */
+    this.mousewheel = fromEvent(canvasEl, 'mousewheel').subscribe((res: WheelEvent) => {
+      var delta = res.deltaY ? res.deltaY / 120 : res.detail ? -res.detail : 0;
+      console.log(delta);
+      if (delta) {
+        if (delta > 0) {
+          this.canvas.style.cursor = 'zoom-out';
+          this.zoom_scale = Math.pow(0.9, this.zoom_scale);
+        } else {
+          this.canvas.style.cursor = 'zoom-in';
+          this.zoom_scale = Math.pow(1.1, this.zoom_scale);
+        }
+
+        // 확대/축소실현
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        var xform = svg.createSVGMatrix();
+        var pt = svg.createSVGPoint();
+        var p1 = svg.createSVGPoint();
+        var p2 = svg.createSVGPoint();
+        pt.x = this.rect.right / 2;
+        pt.y = this.rect.bottom / 2;
+        pt = pt.matrixTransform(xform.inverse());
+        p1.x = 0;
+        p1.y = 0;
+        p1 = p1.matrixTransform(xform.inverse());
+        p2.x = this.rect.right;
+        p1.y = this.rect.bottom;
+        p2 = p2.matrixTransform(xform.inverse());
+
+        this.sceneCtx.translate(pt.x, pt.y);
+        this.sceneCtx.scale(this.zoom_scale, this.zoom_scale);
+        this.sceneCtx.translate(-pt.x, -pt.y);
+        this.sceneCtx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+        this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.scene.width - this.imgElement.nativeElement.width) / 2, (this.scene.height - this.imgElement.nativeElement.height) / 2);
       }
     });
   }
@@ -332,34 +393,46 @@ export class XcopeComponent implements AfterViewInit {
       case 'line_tool':
         this.line_tool_card_display = !this.line_tool_card_display;
         this.magic_wand_tool_card_display = false;
+        this.canvas.style.cursor = 'default';
         break;
       case 'magic_wand_tool':
         this.magic_wand_tool_card_display = !this.magic_wand_tool_card_display;
         this.line_tool_card_display = false;
+        this.canvas.style.cursor = 'default';
         break;
       case 'settings':
         this.line_tool_card_display = false;
         this.magic_wand_tool_card_display = false;
         this.uncaptureEvents();
         this.captureEvents(this.canvas, tool);
+        this.canvas.style.cursor = 'default';
         break;
       case 'clear_canvas':
         this.line_tool_card_display = false;
         this.magic_wand_tool_card_display = false;
         this.perimeters = [];
         this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
+        this.canvas.style.cursor = 'default';
         break;
       case 'export':
         console.log(this.perimeters);
         var blob = new Blob([JSON.stringify(this.perimeters)], { type: 'text/plain;charset=utf-8' });
         saveAs(blob, 'perimeters.json');
+        this.canvas.style.cursor = 'default';
         break;
       case 'print':
         window.print();
+        this.canvas.style.cursor = 'default';
         break;
       case 'import':
-        console.log('화일선택하였음.');
         this.readImage(event);
+        this.canvas.style.cursor = 'default';
+        break;
+      case 'hand':
+        this.canvas.style.cursor = 'move';
+        this.uncaptureEvents();
+        this.captureEvents(this.canvas, tool);
+        this.perimeters = [];
         break;
       default:
         this.line_tool_card_display = false;
@@ -373,7 +446,7 @@ export class XcopeComponent implements AfterViewInit {
 
   /* import메뉴를 눌러 배경화상선택후 화상을 읽어 화면에 현시 */
   readImage(event) {
-    console.log('배경화상화일: ' + event.target.files[0].name);
+    // console.log('배경화상화일: ' + event.target.files[0].name);
     if (event.target.files && event.target.files[0]) {
       var reader = new FileReader();
       reader.onload = e => {
@@ -387,5 +460,25 @@ export class XcopeComponent implements AfterViewInit {
       }
       reader.readAsDataURL(event.target.files[0]);
     }
+  }
+
+  transformedPoint(x: number, y: number) {
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    var xform = svg.createSVGMatrix();
+    var pt = svg.createSVGPoint();
+    pt.x = x;
+    pt.y = y;
+    return pt.matrixTransform(xform.inverse());
+  }
+
+  redraw() {
+    console.log('redraw함수내부');
+    var p1 = this.transformedPoint(0, 0);
+    var p2 = this.transformedPoint(this.canvas.width, this.canvas.height);
+    this.sceneCtx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+    var width = this.imgElement.nativeElement.width;
+    var height = this.imgElement.nativeElement.height;
+    console.log(width + " : " + height);
+    this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.rect.right - width - 280) / 2, (this.rect.bottom - height - 70) / 2);
   }
 }
