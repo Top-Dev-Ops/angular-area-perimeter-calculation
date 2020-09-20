@@ -102,10 +102,11 @@ span.scale-span {
   float: right;
   background-color: white;
   opacity: .9;
-  padding: 6px;
+  padding: 7px;
   font-size: 15px;
   border-top-left-radius: 5px;
   border-bottom-left-radius: 5px;
+  height: 3.6vh;
 }
 .mat-select-trigger {
   padding: 25px;
@@ -113,3 +114,15 @@ span.scale-span {
 }
 .mat-select-value { padding:5px; }
 .ng-tns-c250-3 { padding: 5px; }
+
+.area-panel {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: absolute; 
+  right: 20px;
+  bottom: 30px;
+  z-index: 1000;
+  flex-direction: row;
+}

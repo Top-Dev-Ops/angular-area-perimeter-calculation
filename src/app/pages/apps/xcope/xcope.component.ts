@@ -3,6 +3,7 @@ import { fromEvent, Observable } from 'rxjs';
 import { switchMap, takeUntil, pairwise } from 'rxjs/operators';
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions } from '@angular/material/tooltip';
 import { saveAs } from 'file-saver';
+import MagicWand from 'magic-wand-tool';
 
 export const tooltipDefaults: MatTooltipDefaultOptions = {
   showDelay: 200,
@@ -56,6 +57,9 @@ export class XcopeComponent implements AfterViewInit {
   zoom_scale = 1;                                           // 배경화상의 확대/축소비률(mouse wheel사건시 변화)
   drag_start;                                               // 배경화상을 pan할 때 마우스클릭점위치
   hLeft = null; hRight = null; vTop = null; vBottom = null; // 원을 그릴 때 원의 수평 및 수직점들
+  imageInfo = null;
+  mask = null;
+  area_length = 1;
 
   constructor() { }
 
@@ -146,8 +150,14 @@ export class XcopeComponent implements AfterViewInit {
         this.imgElement.nativeElement.src = e.target.result;
         var width = this.imgElement.nativeElement.width;
         var height = this.imgElement.nativeElement.height;
+        this.imageInfo = {
+          width: this.canvas.width,
+          height: this.canvas.height,
+          context: this.ctx
+        };
         setTimeout(() => {
           this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.rect.right - width - 280) / 2, (this.rect.bottom - height - 70) / 2);
+          this.imageInfo.data = this.sceneCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         }, 500);
       }
       reader.readAsDataURL(event.target.files[0]);
@@ -176,6 +186,8 @@ export class XcopeComponent implements AfterViewInit {
             }
             this.draw(true, _selected_tool);
             this.drawLabels(true);
+            document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
+            document.getElementById('area_area_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).area + ' ' + 'cm<sup>2</sup>';
             res.preventDefault();
             this.uncaptureEvents();
             return false;
@@ -188,6 +200,7 @@ export class XcopeComponent implements AfterViewInit {
             return false;
           }
           this.perimeters.push({ x: x, y: y });
+          document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
           this.draw(false, _selected_tool);
           this.drawLabels();
           break;
@@ -213,6 +226,11 @@ export class XcopeComponent implements AfterViewInit {
           console.log(res.offsetX, x);
           console.log(res.offsetY, y);
           console.log(this.drag_start.x, this.drag_start.y);
+          break;
+        case 'magic_wand':
+          this.perimeters = [];
+          this.drawMask(x, y);
+          console.log('area & peri ', this.calculateAreaPerimeter(this.perimeters).area + " : " + this.calculateAreaPerimeter(this.perimeters).perimeter);
           break;
       }
     });
@@ -252,7 +270,8 @@ export class XcopeComponent implements AfterViewInit {
             this.perimeters.push({ x: this.origin_x, y: this.target_y });
             this.draw(true, _selected_tool);
             this.drawLabels(true);
-            console.log('rectangle도구 면적: ' + this.calculateAreaPerimeter(this.perimeters).area + ', 길이: ' + this.calculateAreaPerimeter(this.perimeters).perimeter);
+            document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
+            document.getElementById('area_area_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).area + ' ' + 'cm<sup>2</sup>';
           }
           break;
         case 'circle':
@@ -261,7 +280,8 @@ export class XcopeComponent implements AfterViewInit {
             this.target_y = y;
             this.draw(true, _selected_tool);
             this.drawLabels(false);
-            console.log('circle도구 면적: ' + this.calculateAreaPerimeter(this.perimeters).area + ', 길이: ' + this.calculateAreaPerimeter(this.perimeters).perimeter);
+            document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
+            document.getElementById('area_area_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).area + ' ' + 'cm<sup>2</sup>';
           }
           break;
         case 'pen':
@@ -269,8 +289,11 @@ export class XcopeComponent implements AfterViewInit {
             this.perimeters.push({ x: x, y: y });
             if (Math.abs(x - this.perimeters[0].x) <= 3 && Math.abs(y - this.perimeters[0].y) <= 3) {
               this.draw(true, _selected_tool);
+              document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
+              document.getElementById('area_area_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).area + ' ' + 'cm<sup>2</sup>';
             } else {
               this.draw(false, _selected_tool);
+              document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
             }
           }
           break;
@@ -439,6 +462,26 @@ export class XcopeComponent implements AfterViewInit {
         this.ctx.stroke();
         this.ctx.fill();
         break;
+      case 'magic_wand':
+        this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
+        this.ctx.beginPath();
+        for (var i = 0; i < this.perimeters.length; i++) {
+          if (i == 0) {
+            this.ctx.moveTo(this.perimeters[i].x, this.perimeters[i].y);
+          } else {
+            this.ctx.lineTo(this.perimeters[i].x, this.perimeters[i].y);
+          }
+        }
+        if (end) {
+          this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
+          this.ctx.lineTo(this.perimeters[0].x, this.perimeters[0].y);
+          this.ctx.closePath();
+          this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+          this.ctx.fill();
+          this.ctx.strokeStyle = 'blue';
+        }
+        this.ctx.stroke();
+        break;
     }
   }
 
@@ -502,6 +545,101 @@ export class XcopeComponent implements AfterViewInit {
   private point(x: number, y: number) {
     this.ctx.fillStyle = 'red';
     this.ctx.fillRect(x - 3, y - 3, 6, 6);
+  }
+
+  /* 배경화상정보에 기초하여 magic wand에 해당한 다각형그리는 함수 */
+  drawMask(x: number, y: number) {
+    if (!this.imageInfo) return;
+    var image = {
+      data: this.imageInfo.data.data,
+      width: this.imageInfo.width,
+      height: this.imageInfo.height,
+      bytes: 4
+    };
+    this.mask = MagicWand.floodFill(image, x, y, 15, null, true);
+    this.mask = MagicWand.gaussBlurOnlyBorder(this.mask, 5);
+    this.drawBorder();
+  }
+
+  /* magic wand에 의해 선택되는 도형의 경계그리기 및 경계점들을 정점배렬 perimeters[]에 보관하는 함수 */
+  drawBorder() {
+    if (!this.mask) return;
+    console.log('drawBorder함수내부');
+    var x, y, i, j, k, w = this.imageInfo.width, h = this.imageInfo.height;
+    var context = this.imageInfo.context;
+    var imgData = context.createImageData(w, h);
+    var res = imgData.data;
+    var cacheInd = MagicWand.getBorderIndices(this.mask);
+    context.clearRect(0, 0, w, h);
+    var len = cacheInd.length;
+    var coordsarray = [];
+    for (j = 0; j < len; j++) {
+      i = cacheInd[j];
+      x = i % w; // calc x by index
+      y = (i - x) / w; // calc y by index
+      k = (y * w + x) * 4;
+      res[k + 3] = 255;
+      coordsarray.push({ x: x, y: y });
+    }
+    context.putImageData(imgData, 0, 0);
+    var tmp_perimeters = [];
+    tmp_perimeters = this.findPerimetersUsingGreedy(coordsarray);
+    for (i = 0; i < tmp_perimeters.length; i += 10) {
+      this.perimeters.push(tmp_perimeters[i]);
+    }
+    this.draw(true, this.selected_tool);
+  }
+
+  /* magic wand기능수행시 다각형내에 다른 다각형이 놓이는 경우제거를 위한 함수 */
+  findPerimetersUsingGreedy(coordsarray) {
+    if (coordsarray == []) return;
+    let id = 0;
+    let min_distance;
+    let id_array = [];
+    let x, y, x1, y1;
+    let subid = 0;
+    let array_len = coordsarray.length;
+    let x0 = coordsarray[0]['x'];
+    let y0 = coordsarray[0]['y'];
+    let distance_to_0 = 0;
+    var dist = 0;
+    while (id < array_len) {
+      subid = id + 1;
+      if (subid == array_len) break;
+      x = coordsarray[id]['x'];
+      y = coordsarray[id]['y'];
+      x1 = coordsarray[subid]['x'];
+      y1 = coordsarray[subid]['y'];
+      distance_to_0 = Math.sqrt(Math.pow(x - x0, 2) + Math.pow(y - y0, 2));
+
+      min_distance = Math.sqrt(Math.pow(x - x1, 2) + Math.pow(y - y1, 2));
+      while (subid < array_len) {
+        x1 = coordsarray[subid]['x'];
+        y1 = coordsarray[subid]['y'];
+        dist = Math.sqrt(Math.pow(x - x1, 2) + Math.pow(y - y1, 2));
+        if (dist < min_distance) {
+          min_distance = dist;
+          id_array.push(subid);
+        }
+        subid += 1;
+      }
+      if (min_distance > distance_to_0 && id > (array_len * 2 / 3)) {
+        return coordsarray.slice(0, id);
+      }
+      if (id_array.length !== 0) {  // 값교환 
+        let swap_id = id_array[id_array.length - 1];
+        let tmp = {};
+        tmp['x'] = coordsarray[id + 1]['x'];
+        tmp['y'] = coordsarray[id + 1]['y'];
+        coordsarray[id + 1]['x'] = coordsarray[swap_id]['x'];
+        coordsarray[id + 1]['y'] = coordsarray[swap_id]['y'];
+        coordsarray[swap_id]['x'] = tmp['x'];
+        coordsarray[swap_id]['y'] = tmp['y'];
+      }
+      id_array = [];
+      id += 1;
+    }
+    return coordsarray;
   }
 
   /* line들사이 교차(충돌)여부검사: 아래의 lineIntersects()를 호출 */
