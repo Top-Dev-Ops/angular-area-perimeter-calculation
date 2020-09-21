@@ -15,7 +15,7 @@ export const tooltipDefaults: MatTooltipDefaultOptions = {
   selector: 'vex-xcope',
   templateUrl: './xcope.component.html',
   styleUrls: ['./xcope.component.scss'],
-  providers: [{ provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: tooltipDefaults }],
+  providers: [{ provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: tooltipDefaults }]
 })
 
 export class XcopeComponent implements AfterViewInit {
@@ -39,6 +39,12 @@ export class XcopeComponent implements AfterViewInit {
   selected_unit = 'cm';                 // 지도의 단위(cm, m, in)
   hide_canvas = 'HIDE CANVAS';          // HIDE CANVAS / SHOW CANVAS
   hide_image = 'HIDE IMAGE';            // HIDE IMAGE / SHOW IMAGE
+  area_length = 1;                      // +단추(화면오른쪽아래)를 눌러 확장한 둘레/면적현시판의 길이(최대 10)
+  perimeters_list = [];                 // 10개의 다각형들의 정점들의 배렬(area_length길이까지 배렬값저장, 나머지는 빈배렬)
+  points_list = [];                     // 10개의 다각형들의 표시정점들의 배렬(area_length길이까지 배렬값저장, 나머지는 빈배렬)
+  perimeter_list = [];                  // 10개의 다각형들의 둘레길이배렬(area_length길이까지 배렬값저장, 나머지는 0)
+  area_list = [];                       // 10개의 다각형들의 면적배렬(area_length길이까지 배렬값저장, 나머지는 0)
+  selected_area = 1;                    // 10개중 지금 선택된 둘레/면적현시판의 첨수
 
   /* canvas에 대한 mouse사건들 */
   mousedown = null;
@@ -59,9 +65,13 @@ export class XcopeComponent implements AfterViewInit {
   hLeft = null; hRight = null; vTop = null; vBottom = null; // 원을 그릴 때 원의 수평 및 수직점들
   imageInfo = null;
   mask = null;
-  area_length = 1;
 
-  constructor() { }
+  constructor() {
+    for (var i = 0; i < 10; i++) {
+      this.perimeter_list.push(0);
+      this.area_list.push(0);
+    }
+  }
 
   /* 모든 변수의 초기화 */
   ngAfterViewInit() {
@@ -111,7 +121,6 @@ export class XcopeComponent implements AfterViewInit {
         this.canvas.style.cursor = 'default';
         break;
       case 'export':
-        console.log(this.perimeters);
         var blob = new Blob([JSON.stringify(this.perimeters)], { type: 'text/plain;charset=utf-8' });
         saveAs(blob, 'perimeters.json');
         this.canvas.style.cursor = 'default';
@@ -129,6 +138,36 @@ export class XcopeComponent implements AfterViewInit {
         this.uncaptureEvents();
         this.captureEvents(this.canvas, tool);
         this.perimeters = [];
+        break;
+      case 'plus':
+        this.line_tool_card_display = false;
+        this.magic_wand_tool_card_display = false;
+        if (this.perimeters.length == 0) {
+          alert('다음 판으로 이동하려면 도형을 먼저 그려야 합니다.');
+          return;
+        }
+        this.perimeters_list.push(this.perimeters);
+        if (this.selected_tool == 'circle') {
+          this.points_list.push([this.hRight, this.vBottom, this.hLeft, this.vTop]);
+        } else if (this.selected_tool == 'pen') {
+          this.points_list.push(this.perimeters[0]);
+        } else {
+          this.points_list.push(this.perimeters);
+        }
+        this.area_length = this.area_length > 10 ? 10 : this.area_length + 1;
+        this.selected_area = this.area_length;
+        this.perimeters = [];
+        this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
+        break;
+      case 'area_plus':
+        // console.log('선택된 도구: ' + this.selected_tool);
+        if (this.perimeters_list.length < this.area_length) {
+          this.perimeters_list.push(this.perimeters);
+        }
+        this.perimeters = [];
+        this.selected_area = parseInt(event.target.innerText);
+        this.perimeters_list[this.selected_area - 1].forEach(element => this.perimeters.push(element));
+        this.draw(true, 'area_plus');
         break;
       default:
         this.line_tool_card_display = false;
@@ -186,8 +225,8 @@ export class XcopeComponent implements AfterViewInit {
             }
             this.draw(true, _selected_tool);
             this.drawLabels(true);
-            document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
-            document.getElementById('area_area_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).area + ' ' + 'cm<sup>2</sup>';
+            this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
+            this.area_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).area;
             res.preventDefault();
             this.uncaptureEvents();
             return false;
@@ -200,9 +239,9 @@ export class XcopeComponent implements AfterViewInit {
             return false;
           }
           this.perimeters.push({ x: x, y: y });
-          document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
           this.draw(false, _selected_tool);
           this.drawLabels();
+          this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
           break;
         case 'rectangle':
           this.isMouseDown = true;
@@ -270,8 +309,8 @@ export class XcopeComponent implements AfterViewInit {
             this.perimeters.push({ x: this.origin_x, y: this.target_y });
             this.draw(true, _selected_tool);
             this.drawLabels(true);
-            document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
-            document.getElementById('area_area_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).area + ' ' + 'cm<sup>2</sup>';
+            this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
+            this.area_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).area;
           }
           break;
         case 'circle':
@@ -280,8 +319,8 @@ export class XcopeComponent implements AfterViewInit {
             this.target_y = y;
             this.draw(true, _selected_tool);
             this.drawLabels(false);
-            document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
-            document.getElementById('area_area_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).area + ' ' + 'cm<sup>2</sup>';
+            this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
+            this.area_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).area;
           }
           break;
         case 'pen':
@@ -289,11 +328,11 @@ export class XcopeComponent implements AfterViewInit {
             this.perimeters.push({ x: x, y: y });
             if (Math.abs(x - this.perimeters[0].x) <= 3 && Math.abs(y - this.perimeters[0].y) <= 3) {
               this.draw(true, _selected_tool);
-              document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
-              document.getElementById('area_area_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).area + ' ' + 'cm<sup>2</sup>';
+              this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
+              this.area_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).area;
             } else {
               this.draw(false, _selected_tool);
-              document.getElementById('area_perimeter_' + this.area_length).innerHTML = this.calculateAreaPerimeter(this.perimeters).perimeter + ' ' + 'cm';
+              this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
             }
           }
           break;
@@ -301,11 +340,6 @@ export class XcopeComponent implements AfterViewInit {
           if (this.drag_start) {
             var pt = { x: res.offsetX || x, y: res.offsetY || y };
             this.sceneCtx.translate(pt.x - this.drag_start.x, pt.y - this.drag_start.y);
-            console.log('----------------------');
-            console.log('pt-dragstart: ', pt.x - this.drag_start.x, pt.y - this.drag_start.y);
-            console.log(res.offsetX, x);
-            console.log(res.offsetY, y);
-            console.log(pt.x, pt.y);
             this.redraw();
           }
           break;
@@ -481,6 +515,20 @@ export class XcopeComponent implements AfterViewInit {
           this.ctx.strokeStyle = 'blue';
         }
         this.ctx.stroke();
+        break;
+      case 'area_plus':
+        this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
+        this.ctx.strokeStyle = 'blue';
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.perimeters[0].x, this.perimeters[0].y);
+        for (var i = 1; i < this.perimeters.length; i++) {
+          this.ctx.lineTo(this.perimeters[i].x, this.perimeters[i].y);
+        }
+        this.ctx.lineTo(this.perimeters[0].x, this.perimeters[0].y);
+        this.ctx.closePath();
+        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        this.ctx.stroke();
+        this.ctx.fill();
         break;
     }
   }
@@ -720,8 +768,6 @@ export class XcopeComponent implements AfterViewInit {
   redraw() {
     var p1 = { x: 0, y: 0 };
     var p2 = { x: this.scene.width, y: this.scene.height };
-    console.log('************* ' + p1.x + " : " + p1.y + "   " + p2.x + " : " + p2.y + " *************");
-    console.log('************* ' + this.scene.width + " X " + this.scene.height + " *************");
     this.sceneCtx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
     var width = this.imgElement.nativeElement.width;
     var height = this.imgElement.nativeElement.height;

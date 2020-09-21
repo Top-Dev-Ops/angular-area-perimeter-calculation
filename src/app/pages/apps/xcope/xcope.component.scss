@@ -1,3 +1,12 @@
+.canvas {
+  position: absolute; 
+  z-index: 10;
+}
+.canvas-background {
+  position: absolute;
+  z-index: 1;
+}
+
 .custom-navbar {
   position: absolute;
   top: 0;
@@ -17,6 +26,7 @@
   top: 5.5rem;
   left: 2rem;
   width: 9rem;
+  z-index: 1000;
 }
 
 .hide-canvas {
@@ -24,6 +34,7 @@
   top: 8rem;
   left: 2rem;
   width: 9rem;
+  z-index: 1000;
 }
 
 .main-tool {
@@ -125,4 +136,58 @@ span.scale-span {
   bottom: 30px;
   z-index: 1000;
   flex-direction: row;
+}
+.area-plus {
+  float: left;
+  background-color: white;
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  padding-top: 2px;
+  border: 1px solid #7f8aa1;
+}
+.area-plus-icon {
+  color: red;
+  font-weight: bold;
+  font-size: 23px;
+  text-align: center;
+}
+.area-index {
+  float: left;
+  background-color: #292b2c;
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  padding-top: 5px;
+  border-left: 1px solid #7f8aa1;
+  border-right: 1px solid #7f8aa1;
+}
+.area-index:hover { opacity: .5; }
+.area-index-index {
+  color: white;
+  font-weight: bold;
+  font-size: 20px;
+  text-align: center;
+}
+.area-info-index {
+  float: left;
+  background-color: #435776;
+  height: 40px;
+  text-align: center;
+  padding-top: 8px;
+  padding-left: 5px;
+}
+.area-perimeter-index {
+  color: white;
+  font-size: 16px;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 5px;
+}
+.area-area-index {
+  color: white;
+  font-size: 16px;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 5px;
 }
