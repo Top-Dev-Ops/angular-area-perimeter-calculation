@@ -101,7 +101,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[0]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[0]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 1 ? 'block' : 'none'">
       <span class="area-index-index">2</span>
@@ -117,7 +118,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[1]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[1]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 2 ? 'block' : 'none'">
       <span class="area-index-index">3</span>
@@ -133,7 +135,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[2]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[2]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 3 ? 'block' : 'none'">
       <span class="area-index-index">4</span>
@@ -149,7 +152,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[3]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[3]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 4 ? 'block' : 'none'">
       <span class="area-index-index">5</span>
@@ -165,7 +169,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[4]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[4]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 5 ? 'block' : 'none'">
       <span class="area-index-index">6</span>
@@ -181,7 +186,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[5]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[5]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 6 ? 'block' : 'none'">
       <span class="area-index-index">7</span>
@@ -197,7 +203,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[6]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[6]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 7 ? 'block' : 'none'">
       <span class="area-index-index">8</span>
@@ -213,7 +220,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[7]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[7]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 8 ? 'block' : 'none'">
       <span class="area-index-index">9</span>
@@ -229,7 +237,8 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[8]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[8]}}
+        cm<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 9 ? 'block' : 'none'">
       <span class="area-index-index">10</span>
@@ -245,8 +254,34 @@
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
-      <span class="area-area-index">{{area_list[9]}} cm<sup>2</sup></span>
+      <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[9]}}
+        cm<sup>2</sup></span>
     </li>
   </ul>
-  <mat-card #area_details_1 style="position: absolute; z-index: 500;"></mat-card>
+  <mat-card class="area-details" [style.display]="area_details_show ? 'block' : 'none'">
+    <small style="font-weight: bold;">nm<sup>2</sup>&nbsp;&nbsp;&nbsp; {{current_area}} *
+      10<sup>{{square_index + 14}}</sup></small><br>
+    <small style="font-weight: bold;">mm<sup>2</sup>&nbsp;&nbsp; {{current_area}} *
+      10<sup>{{square_index + 2}}</sup></small><br>
+    <small style="font-weight: bold;">cm<sup>2</sup>&nbsp;&nbsp;&nbsp;&nbsp; {{current_area}} *
+      10<sup>{{square_index}}</sup></small><br>
+    <small style="font-weight: bold;">m<sup>2</sup>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{current_area}} *
+      10<sup>{{square_index - 4}}</sup></small><br>
+    <small style="font-weight: bold;">km<sup>2</sup>&nbsp;&nbsp;&nbsp; {{current_area}} *
+      10<sup>{{square_index - 10}}</sup></small><br>
+    <small style="font-weight: bold;">in<sup>2</sup>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      {{(current_area * 1.55).toFixed(2)}} *
+      10<sup>{{square_index - 1}}</sup></small><br>
+    <small style="font-weight: bold;">ft<sup>2</sup>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      {{(current_area * 1.076).toFixed(2)}} *
+      10<sup>{{square_index - 3}}</sup></small><br>
+    <small style="font-weight: bold;">yd<sup>2</sup>&nbsp;&nbsp;&nbsp;&nbsp; {{(current_area * 1.196).toFixed(2)}} *
+      10<sup>{{square_index - 4}}</sup></small><br>
+    <small style="font-weight: bold;">mi<sup>2</sup>&nbsp;&nbsp;&nbsp;&nbsp; {{(current_area * 3.861).toFixed(2)}} *
+      10<sup>{{square_index - 11}}</sup></small><br>
+    <small style="font-weight: bold;">a&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{current_area}} *
+      10<sup>{{square_index - 7}}</sup></small><br>
+    <small style="font-weight: bold;">ha&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {{current_area}} *
+      10<sup>{{square_index - 8}}</sup></small>
+  </mat-card>
 </div>

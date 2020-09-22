@@ -4,6 +4,7 @@ import { switchMap, takeUntil, pairwise } from 'rxjs/operators';
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions } from '@angular/material/tooltip';
 import { saveAs } from 'file-saver';
 import MagicWand from 'magic-wand-tool';
+import { ComponentsOverviewCardsComponent } from '../../ui/components/components-overview/components/components-overview-cards/components-overview-cards.component';
 
 export const tooltipDefaults: MatTooltipDefaultOptions = {
   showDelay: 200,
@@ -45,6 +46,9 @@ export class XcopeComponent implements AfterViewInit {
   perimeter_list = [];                  // 10개의 다각형들의 둘레길이배렬(area_length길이까지 배렬값저장, 나머지는 0)
   area_list = [];                       // 10개의 다각형들의 면적배렬(area_length길이까지 배렬값저장, 나머지는 0)
   selected_area = 1;                    // 10개중 지금 선택된 둘레/면적현시판의 첨수
+  area_details_show = false;            // 다른 단위로 변환된 면적현시판 visible상태반영
+  current_area = 0;                     // 현재의 면적
+  square_index = 0;                     // 현재의 면적을 다른 단위면적으로 변환할 때의 10의 제곱수
 
   /* canvas에 대한 mouse사건들 */
   mousedown = null;
@@ -65,6 +69,7 @@ export class XcopeComponent implements AfterViewInit {
   hLeft = null; hRight = null; vTop = null; vBottom = null; // 원을 그릴 때 원의 수평 및 수직점들
   imageInfo = null;
   mask = null;
+
 
   constructor() {
     for (var i = 0; i < 10; i++) {
@@ -168,6 +173,7 @@ export class XcopeComponent implements AfterViewInit {
         this.selected_area = parseInt(event.target.innerText);
         this.perimeters_list[this.selected_area - 1].forEach(element => this.perimeters.push(element));
         this.draw(true, 'area_plus');
+        this.calculateAreaDetails(this.calculateAreaPerimeter(this.perimeters).area)
         break;
       default:
         this.line_tool_card_display = false;
@@ -268,8 +274,10 @@ export class XcopeComponent implements AfterViewInit {
           break;
         case 'magic_wand':
           this.perimeters = [];
+          console.log('확대축소비률: ' + this.zoom_scale);
           this.drawMask(x, y);
-          console.log('area & peri ', this.calculateAreaPerimeter(this.perimeters).area + " : " + this.calculateAreaPerimeter(this.perimeters).perimeter);
+          this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
+          this.area_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).area;
           break;
       }
     });
@@ -289,6 +297,7 @@ export class XcopeComponent implements AfterViewInit {
         case 'hand':
           this.isDraggable = false;
           this.drag_start = null;
+          this.imageInfo.data = this.sceneCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
           break;
       }
     });
@@ -380,6 +389,7 @@ export class XcopeComponent implements AfterViewInit {
         this.sceneCtx.translate(-pt.x, -pt.y);
         this.sceneCtx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
         this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.scene.width - this.imgElement.nativeElement.width) / 2, (this.scene.height - this.imgElement.nativeElement.height) / 2);
+        this.imageInfo.data = this.sceneCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
       }
     });
   }
@@ -632,7 +642,7 @@ export class XcopeComponent implements AfterViewInit {
     context.putImageData(imgData, 0, 0);
     var tmp_perimeters = [];
     tmp_perimeters = this.findPerimetersUsingGreedy(coordsarray);
-    for (i = 0; i < tmp_perimeters.length; i += 10) {
+    for (i = 0; i < tmp_perimeters.length; i += 20) {
       this.perimeters.push(tmp_perimeters[i]);
     }
     this.draw(true, this.selected_tool);
@@ -762,6 +772,23 @@ export class XcopeComponent implements AfterViewInit {
     perimeter_length = perimeter_length / this.zoom_scale;
     var result = { area: Math.abs(area / 2).toFixed(2), perimeter: perimeter_length.toFixed(2) };
     return result;
+  }
+
+  calculateAreaDetails(area) {
+    console.log('---------------------');
+    console.log('현재 면적값: ' + area);
+    this.current_area = area;
+    this.square_index = 0;
+    var b = 0;
+    while (this.current_area > 10) {
+      b = this.current_area / 10;
+      b = ~~b;
+      this.square_index++;
+      this.current_area = b;
+    }
+    console.log("toFixed전의 값: " + area / (10 ** this.square_index));
+    this.current_area = parseFloat((area / (10 ** this.square_index)).toFixed(2));
+    console.log("current_area변수: " + this.current_area);
   }
 
   /* 배경화상재그리기 */
