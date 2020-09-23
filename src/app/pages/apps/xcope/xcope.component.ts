@@ -48,6 +48,9 @@ export class XcopeComponent implements AfterViewInit {
   area_details_show = false;            // 다른 단위로 변환된 면적현시판 visible상태반영
   current_area = 0;                     // 현재의 면적
   square_index = 0;                     // 현재의 면적을 다른 단위면적으로 변환할 때의 10의 제곱수
+  lat = 40.730610;
+  lng = -73.935242;
+  show_map = false;
 
   /* canvas에 대한 mouse사건들 */
   mousedown = null;

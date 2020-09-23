@@ -6,6 +6,14 @@
   position: absolute;
   z-index: 1;
 }
+agm-map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 500px;
+  width: 100%;
+  z-index: 2;
+}
 
 .custom-navbar {
   position: absolute;

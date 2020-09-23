@@ -2,9 +2,10 @@
   <canvas class="canvas" #canvas width="100" height="100"
     [style.display]="hide_canvas == 'HIDE CANVAS' ? 'block' : 'none'"></canvas>
   <canvas class="canvas-background" #canvas_background
-    [style.display]="hide_image == 'HIDE IMAGE' ? 'block' : 'none'"></canvas>
+    [style.display]="hide_image == 'HIDE IMAGE' && !show_map ? 'block' : 'none'"></canvas>
   <img #background src="../../../../assets/img/background.jpg" alt="background"
     style="display: none; width: 100%; height: 100%;">
+  <agm-map #map [latitude]="lat" [longitude]="lng" [style.display]="show_map ? 'block' : 'none'"></agm-map>
 
   <button mat-raised-button class="hide-image" color="accent"
     (click)="hide_image = hide_image == 'HIDE IMAGE' ? 'SHOW IMAGE' : 'HIDE IMAGE'">{{hide_image}}</button>
@@ -40,7 +41,7 @@
     <button mat-menu-item (click)="openTool('print')">Print</button>
     <button mat-menu-item (click)="file_dialog.click()">Import</button>
     <input type="file" #file_dialog style="display: none" (change)="openTool('import', $event)">
-    <button mat-menu-item (click)="openTool('show_map')">Show Map</button>
+    <button mat-menu-item (click)="show_map=true">Show Map</button>
   </mat-menu>
 
   <mat-card class="main-tool">

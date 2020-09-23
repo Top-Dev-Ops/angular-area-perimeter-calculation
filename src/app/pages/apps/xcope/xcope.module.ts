@@ -21,6 +21,7 @@ import { ScrollbarModule } from '../../../../@vex/components/scrollbar/scrollbar
 import { PageLayoutModule } from '../../../../@vex/components/page-layout/page-layout.module';
 import { ContainerModule } from '../../../../@vex/directives/container/container.module';
 import { IconModule } from '@visurel/iconify-angular';
+import { AgmCoreModule } from '@agm/core';
 
 @NgModule({
   declarations: [XcopeComponent],
@@ -30,6 +31,9 @@ import { IconModule } from '@visurel/iconify-angular';
     AngularCalendarModule.forRoot({
       provide: DateAdapter,
       useFactory: adapterFactory
+    }),
+    AgmCoreModule.forRoot({
+      apiKey: 'AIzaSyBXwQ8Q_I-thHKC0mTz9NstrXIeEC_JCYU'
     }),
     MatDialogModule,
     MatButtonModule,
