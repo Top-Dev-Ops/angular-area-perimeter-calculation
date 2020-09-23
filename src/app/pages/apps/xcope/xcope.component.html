@@ -19,11 +19,12 @@
         src="../../../../assets/img/icons/settings.ico" alt="settings" (click)="openTool('settings')"></button>
     <mat-select name="unit" [(value)]="selected_unit">
       <mat-option value="cm">centimeters</mat-option>
-      <mat-option value="m">meters</mat-option>
       <mat-option value="in">inches</mat-option>
+      <mat-option value="m">meters</mat-option>
+      <mat-option value="km">kilometers</mat-option>
     </mat-select>
 
-    <input type="text" class="scale-text" value="{{scale_factor}}">
+    <input type="text" class="scale-text" value="{{scale_factor}}" style="font-size: 18px;">
     <span class="scale-span">1 : </span>
 
     <img class="arrow-image" src="../../../../assets/img/icons/up.ico" alt="arrow up"
@@ -96,13 +97,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[0]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[0]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[0]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 1 ? 'block' : 'none'">
       <span class="area-index-index">2</span>
@@ -113,13 +114,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[1]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[1]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[1]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 2 ? 'block' : 'none'">
       <span class="area-index-index">3</span>
@@ -130,13 +131,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[2]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[2]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[2]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 3 ? 'block' : 'none'">
       <span class="area-index-index">4</span>
@@ -147,13 +148,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[3]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[3]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[3]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 4 ? 'block' : 'none'">
       <span class="area-index-index">5</span>
@@ -164,13 +165,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[4]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[4]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[4]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 5 ? 'block' : 'none'">
       <span class="area-index-index">6</span>
@@ -181,13 +182,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[5]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[5]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[5]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 6 ? 'block' : 'none'">
       <span class="area-index-index">7</span>
@@ -198,13 +199,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[6]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[6]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[6]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 7 ? 'block' : 'none'">
       <span class="area-index-index">8</span>
@@ -215,13 +216,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[7]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[7]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[7]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 8 ? 'block' : 'none'">
       <span class="area-index-index">9</span>
@@ -232,13 +233,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[8]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[8]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[8]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
     <li class="area-index" (click)="openTool('area_plus', $event)" [style.display]="area_length > 9 ? 'block' : 'none'">
       <span class="area-index-index">10</span>
@@ -249,13 +250,13 @@
         <path fill-rule="evenodd"
           d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
       </svg>
-      <span class="area-perimeter-index">{{perimeter_list[9]}} cm</span>
+      <span class="area-perimeter-index">{{perimeter_list[9]}} {{selected_unit}}</span>
       <svg class="bi bi-square-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="white"
         xmlns="http://www.w3.org/2000/svg" style="display: inline;">
         <rect width="16" height="16" rx="2" />
       </svg>
       <span class="area-area-index" (click)="area_details_show=!area_details_show">{{area_list[9]}}
-        cm<sup>2</sup></span>
+        {{selected_unit}}<sup>2</sup></span>
     </li>
   </ul>
   <mat-card class="area-details" [style.display]="area_details_show ? 'block' : 'none'">

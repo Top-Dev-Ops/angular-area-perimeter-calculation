@@ -4,7 +4,6 @@ import { switchMap, takeUntil, pairwise } from 'rxjs/operators';
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions } from '@angular/material/tooltip';
 import { saveAs } from 'file-saver';
 import MagicWand from 'magic-wand-tool';
-import { ComponentsOverviewCardsComponent } from '../../ui/components/components-overview/components/components-overview-cards/components-overview-cards.component';
 
 export const tooltipDefaults: MatTooltipDefaultOptions = {
   showDelay: 200,
@@ -64,12 +63,13 @@ export class XcopeComponent implements AfterViewInit {
   perimeters = [];                                          // polygon의 점들의 배렬
   origin_x = null; origin_y = null;                         // 시작점-마우스를 눌렀을 때의 점위치
   target_x = null; target_y = null;                         // 마감점-마우스를 놓았을 때의 점위치
-  zoom_scale = 1;                                           // 배경화상의 확대/축소비률(mouse wheel사건시 변화)
-  drag_start;                                               // 배경화상을 pan할 때 마우스클릭점위치
+  zoom_scale = 1;                                           // 배경화상의 확대/축소비률(mouse wheel사건시 변화, 1.1의 제곱수)
+  zoom_direction = 0;                                       // 배경화상의 확대/축소방향(zoom_in: 1, zoom_out: -1, 기타: 0)
+  drag_start: any;                                          // 배경화상을 pan할 때 마우스클릭점위치
   hLeft = null; hRight = null; vTop = null; vBottom = null; // 원을 그릴 때 원의 수평 및 수직점들
-  imageInfo = null;
-  mask = null;
-
+  imageInfo = null;                                         // scene(배경화상)의 모든 정보값포함(imageInfo에 기초하여 magic wand기능수행)
+  mask = null;                                              // magic wand기능수행시 리용변수
+  selected_vertex_id = -1;
 
   constructor() {
     for (var i = 0; i < 10; i++) {
@@ -123,6 +123,7 @@ export class XcopeComponent implements AfterViewInit {
         this.magic_wand_tool_card_display = false;
         this.perimeters = [];
         this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
+        this.sceneCtx.clearRect(0, 0, this.rect.right, this.rect.bottom);
         this.canvas.style.cursor = 'default';
         break;
       case 'export':
@@ -135,6 +136,8 @@ export class XcopeComponent implements AfterViewInit {
         this.canvas.style.cursor = 'default';
         break;
       case 'import':
+        this.zoom_scale = 1;
+        this.zoom_direction = 0;
         this.readImage(event);
         this.canvas.style.cursor = 'default';
         break;
@@ -145,6 +148,7 @@ export class XcopeComponent implements AfterViewInit {
         this.perimeters = [];
         break;
       case 'plus':
+        console.log('확대/축소', this.zoom_scale);
         this.line_tool_card_display = false;
         this.magic_wand_tool_card_display = false;
         if (this.perimeters.length == 0) {
@@ -165,7 +169,6 @@ export class XcopeComponent implements AfterViewInit {
         this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
         break;
       case 'area_plus':
-        // console.log('선택된 도구: ' + this.selected_tool);
         if (this.perimeters_list.length < this.area_length) {
           this.perimeters_list.push(this.perimeters);
         }
@@ -174,6 +177,16 @@ export class XcopeComponent implements AfterViewInit {
         this.perimeters_list[this.selected_area - 1].forEach(element => this.perimeters.push(element));
         this.draw(true, 'area_plus');
         this.calculateAreaDetails(this.calculateAreaPerimeter(this.perimeters).area)
+        break;
+      case 'zoom_in':
+        this.canvas.style.cursor = 'zoom-in';
+        this.uncaptureEvents();
+        this.captureEvents(this.canvas, tool);
+        break;
+      case 'zoom_out':
+        this.canvas.style.cursor = 'zoom-out';
+        this.uncaptureEvents();
+        this.captureEvents(this.canvas, tool);
         break;
       default:
         this.line_tool_card_display = false;
@@ -187,7 +200,6 @@ export class XcopeComponent implements AfterViewInit {
 
   /* import메뉴를 눌러 배경화상선택후 화상을 읽어 화면에 현시 */
   readImage(event) {
-    // console.log('배경화상화일: ' + event.target.files[0].name);
     if (event.target.files && event.target.files[0]) {
       var reader = new FileReader();
       reader.onload = e => {
@@ -253,6 +265,9 @@ export class XcopeComponent implements AfterViewInit {
           this.isMouseDown = true;
           this.origin_x = x;
           this.origin_y = y;
+          var clicked_id = this.checkPerimeterPointClicked(x, y, this.perimeters);
+          clicked_id > -1 ? console.log("점클릭여부: " + clicked_id) : '';
+
           break;
         case 'pen':
           this.isMouseDown = true;
@@ -267,17 +282,22 @@ export class XcopeComponent implements AfterViewInit {
         case 'hand':
           this.isDraggable = true;
           this.drag_start = { x: res.offsetX || x, y: res.offsetY || y };
-          console.log('----------------------');
-          console.log(res.offsetX, x);
-          console.log(res.offsetY, y);
-          console.log(this.drag_start.x, this.drag_start.y);
           break;
         case 'magic_wand':
           this.perimeters = [];
-          console.log('확대축소비률: ' + this.zoom_scale);
           this.drawMask(x, y);
           this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
           this.area_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).area;
+          break;
+        case 'zoom_in':
+          this.zoom_scale *= 1.1;
+          this.zoom_direction = 1;
+          this.zoom();
+          break;
+        case 'zoom_out':
+          this.zoom_scale /= 1.1;
+          this.zoom_direction = -1;
+          this.zoom();
           break;
       }
     });
@@ -362,34 +382,14 @@ export class XcopeComponent implements AfterViewInit {
       if (delta) {
         if (delta > 0) {
           this.canvas.style.cursor = 'zoom-out';
-          this.zoom_scale = Math.pow(0.9, this.zoom_scale);
+          this.zoom_direction = -1;
+          this.zoom_scale /= 1.1;
         } else {
           this.canvas.style.cursor = 'zoom-in';
-          this.zoom_scale = Math.pow(1.1, this.zoom_scale);
+          this.zoom_direction = 1;
+          this.zoom_scale *= 1.1;
         }
-
-        // 확대/축소실현
-        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        var xform = svg.createSVGMatrix();
-        var pt = svg.createSVGPoint();
-        var p1 = svg.createSVGPoint();
-        var p2 = svg.createSVGPoint();
-        pt.x = this.rect.right / 2;
-        pt.y = this.rect.bottom / 2;
-        pt = pt.matrixTransform(xform.inverse());
-        p1.x = 0;
-        p1.y = 0;
-        p1 = p1.matrixTransform(xform.inverse());
-        p2.x = this.rect.right;
-        p1.y = this.rect.bottom;
-        p2 = p2.matrixTransform(xform.inverse());
-
-        this.sceneCtx.translate(pt.x, pt.y);
-        this.sceneCtx.scale(this.zoom_scale, this.zoom_scale);
-        this.sceneCtx.translate(-pt.x, -pt.y);
-        this.sceneCtx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
-        this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.scene.width - this.imgElement.nativeElement.width) / 2, (this.scene.height - this.imgElement.nativeElement.height) / 2);
-        this.imageInfo.data = this.sceneCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.zoom();
       }
     });
   }
@@ -399,6 +399,32 @@ export class XcopeComponent implements AfterViewInit {
     if (this.mousedown != null) this.mousedown.unsubscribe();
     if (this.mouseup != null) this.mouseup.unsubscribe();
     if (this.mousemove != null) this.mousemove.unsubscribe();
+  }
+
+  /* 배경화상의 확대/축소실현 */
+  private zoom() {
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    var xform = svg.createSVGMatrix();
+    var pt = svg.createSVGPoint();
+    var p1 = svg.createSVGPoint();
+    var p2 = svg.createSVGPoint();
+    pt.x = this.rect.right / 2;
+    pt.y = this.rect.bottom / 2;
+    p1.x = 0; p1.y = 0;
+    p2.x = this.rect.right; p2.y = this.rect.bottom;
+    pt = pt.matrixTransform(xform.inverse());
+    p1 = p1.matrixTransform(xform.inverse());
+    p2 = p2.matrixTransform(xform.inverse());
+    this.sceneCtx.translate(pt.x, pt.y);
+    if (this.zoom_direction == 1) {
+      this.sceneCtx.scale(1.1, 1.1);
+    } else if (this.zoom_direction == -1) {
+      this.sceneCtx.scale(1 / 1.1, 1 / 1.1);
+    }
+    this.sceneCtx.translate(-pt.x, -pt.y);
+    this.sceneCtx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+    this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.scene.width - this.imgElement.nativeElement.width) / 2, (this.scene.height - this.imgElement.nativeElement.height) / 2);
+    this.imageInfo.data = this.sceneCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
   }
 
   /* 정점들의 배렬 perimeters[]에 기초하여 다각형그리는 함수 */
@@ -642,7 +668,7 @@ export class XcopeComponent implements AfterViewInit {
     context.putImageData(imgData, 0, 0);
     var tmp_perimeters = [];
     tmp_perimeters = this.findPerimetersUsingGreedy(coordsarray);
-    for (i = 0; i < tmp_perimeters.length; i += 20) {
+    for (i = 0; i < tmp_perimeters.length; i += 10) {
       this.perimeters.push(tmp_perimeters[i]);
     }
     this.draw(true, this.selected_tool);
@@ -774,9 +800,8 @@ export class XcopeComponent implements AfterViewInit {
     return result;
   }
 
+  /* 주어진 면적값을 각이한 단위의 면적값으로 변환하는 함수 */
   calculateAreaDetails(area) {
-    console.log('---------------------');
-    console.log('현재 면적값: ' + area);
     this.current_area = area;
     this.square_index = 0;
     var b = 0;
@@ -786,9 +811,7 @@ export class XcopeComponent implements AfterViewInit {
       this.square_index++;
       this.current_area = b;
     }
-    console.log("toFixed전의 값: " + area / (10 ** this.square_index));
     this.current_area = parseFloat((area / (10 ** this.square_index)).toFixed(2));
-    console.log("current_area변수: " + this.current_area);
   }
 
   /* 배경화상재그리기 */
