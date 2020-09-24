@@ -24,6 +24,7 @@ export class XcopeComponent implements AfterViewInit {
   @ViewChild('canvas') canvasElement: ElementRef;
   @ViewChild('canvas_background') sceneElement: ElementRef;
   @ViewChild('background') imgElement: ElementRef;
+  @ViewChild('map') mapElement: ElementRef;
 
   /* html의 element들로부터 얻어내는 객체변수들 */
   private canvas: HTMLCanvasElement;
@@ -50,7 +51,8 @@ export class XcopeComponent implements AfterViewInit {
   square_index = 0;                     // 현재의 면적을 다른 단위면적으로 변환할 때의 10의 제곱수
   lat = 40.730610;
   lng = -73.935242;
-  show_map = false;
+  show_map = false;                     // 지도를 현시하는가 아니면 배경화상을 현시하는가를 결정하는 변수
+  map_zIndex = true;                    // map이 canvas우에 놓이는가, 아래에 놓이는가를 결정하는 변수
 
   /* canvas에 대한 mouse사건들 */
   mousedown = null;
@@ -194,6 +196,7 @@ export class XcopeComponent implements AfterViewInit {
       default:
         this.line_tool_card_display = false;
         this.magic_wand_tool_card_display = false;
+        this.map_zIndex = false;
         this.uncaptureEvents();
         this.captureEvents(this.canvas, tool);
         this.perimeters = [];
