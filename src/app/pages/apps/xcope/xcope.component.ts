@@ -164,7 +164,6 @@ export class XcopeComponent implements AfterViewInit {
         }
         this.perimeters_list.push(this.perimeters);
         if (this.last_selected_tool == 'circle') {
-          console.log('+ - circle정점추가');
           this.points_list.push([this.hRight, this.vBottom, this.hLeft, this.vTop]);
         } else if (this.last_selected_tool == 'pen') {
           this.points_list.push([this.perimeters[0]]);
@@ -289,8 +288,10 @@ export class XcopeComponent implements AfterViewInit {
           this.origin_x = x;
           this.origin_y = y;
           var clicked_id = this.checkPerimeterPointClicked(x, y, this.perimeters);
-          clicked_id > -1 ? console.log("점클릭여부: " + clicked_id) : '';
-
+          if (clicked_id != -1) {
+            this.canvas.style.cursor = 'crosshair';
+            this.selected_vertex_id = clicked_id;
+          }
           break;
         case 'pen':
           this.isMouseDown = true;
@@ -301,6 +302,14 @@ export class XcopeComponent implements AfterViewInit {
           this.isMouseDown = true;
           this.origin_x = x;
           this.origin_y = y;
+          if (this.vTop != null) {
+            if (x >= parseInt(this.vTop.x) - 10 && x <= parseInt(this.vTop.x) + 10 && y >= parseInt(this.vTop.y) - 10 && y <= parseInt(this.vTop.y) + 10) {
+              this.selected_vertex_id = 0;
+            }
+            if (x >= parseInt(this.vBottom.x) - 10 && x <= parseInt(this.vBottom.x) + 10 && y >= parseInt(this.vBottom.y) - 10 && y <= parseInt(this.vBottom.y) + 10) {
+              this.selected_vertex_id = 1;
+            }
+          }
           break;
         case 'hand':
           this.isDraggable = true;
@@ -330,12 +339,16 @@ export class XcopeComponent implements AfterViewInit {
       switch (_selected_tool) {
         case 'rectangle':
           this.isMouseDown = false;
+          this.selected_vertex_id = -1;
+          this.canvas.style.cursor = 'default';
           break;
         case 'pen':
           this.isMouseDown = false;
           break;
         case 'circle':
           this.isMouseDown = false;
+          this.selected_vertex_id = -1;
+          this.canvas.style.cursor = 'default';
           break;
         case 'hand':
           this.isDraggable = false;
@@ -349,9 +362,19 @@ export class XcopeComponent implements AfterViewInit {
     this.mousemove = fromEvent(canvasEl, 'mousemove').subscribe((res: MouseEvent) => {
       var x = res.clientX - this.rect.left;
       var y = res.clientY - this.rect.top;
+      this.canvas.style.cursor = this.checkPerimeterPointClicked(x, y, this.perimeters) != -1 ? 'crosshair' : 'default';
       switch (_selected_tool) {
         case 'rectangle':
           if (this.isMouseDown) {
+            if (this.selected_vertex_id != -1) {
+              this.perimeters[this.selected_vertex_id].x = x;
+              this.perimeters[this.selected_vertex_id].y = y;
+              this.draw(true, _selected_tool);
+              this.drawLabels(true);
+              this.perimeter_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).perimeter;
+              this.area_list[this.area_length - 1] = this.calculateAreaPerimeter(this.perimeters).area;
+              break;
+            }
             this.target_x = x;
             this.target_y = y;
             this.perimeters = [];
@@ -367,6 +390,17 @@ export class XcopeComponent implements AfterViewInit {
           break;
         case 'circle':
           if (this.isMouseDown) {
+            /* if (this.selected_vertex_id == 0) {
+              this.vTop.x = x;
+              this.vTop.y = y;
+              this.bezierCurve(this.hLeft, this.vTop, this.hRight, true);
+              break;
+            } else if (this.selected_vertex_id == 1) {
+              this.vBottom.x = x;
+              this.vBottom.y = y;
+              this.bezierCurve(this.hLeft, this.vBottom, this.hRight, false);
+              break;
+            } */
             this.target_x = x;
             this.target_y = y;
             this.draw(true, _selected_tool);
@@ -515,6 +549,21 @@ export class XcopeComponent implements AfterViewInit {
         }
         break;
       case 'circle':
+        this.ctx.strokeStyle = 'blue';
+        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
+        this.ctx.beginPath();
+        if (this.selected_vertex_id != -1) {
+          this.ctx.moveTo(this.perimeters[0].x, this.perimeters[0].y);
+          for (var i = 1; i < this.perimeters.length; i++) {
+            this.ctx.lineTo(this.perimeters[i].x, this.perimeters[i].y);
+          }
+          this.ctx.lineTo(this.perimeters[0].x, this.perimeters[0].y);
+          this.ctx.closePath();
+          this.ctx.stroke();
+          this.ctx.fill();
+          break;
+        }
         this.perimeters = [];
         var radiusX = (this.target_x - this.origin_x) * 0.5;  // x반경
         var radiusY = (this.target_y - this.origin_y) * 0.5;  // y반경
@@ -542,10 +591,6 @@ export class XcopeComponent implements AfterViewInit {
           }
           this.perimeters.push({ x: parseInt(centerX + radiusX * Math.cos(a)), y: parseInt(centerY + radiusY * Math.sin(a)) });
         }
-        this.ctx.strokeStyle = 'blue';
-        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-        this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
-        this.ctx.beginPath();
         this.ctx.moveTo(this.perimeters[0].x, this.perimeters[0].y);
         for (var i = 1; i < this.perimeters.length; i++) {
           this.ctx.lineTo(this.perimeters[i].x, this.perimeters[i].y);
@@ -697,6 +742,84 @@ export class XcopeComponent implements AfterViewInit {
     this.draw(true, this.selected_tool);
   }
 
+  /* 원의 top 및 bottom점을 이동할 때 left와 right점에 기초하여 마우스점을 통과하는 bezier곡선을 구성하는 함수 */
+  bezierCurve(p0, p1, p2, place) {
+    var temp_perimeter = new Array();
+    var top_x = Math.floor(2 * p1.x - p0.x / 2 - p2.x / 2);
+    var top_y = Math.floor(2 * p1.y - p0.y / 2 - p2.y / 2);
+    var accuracy = 0.01;
+    this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = "#FF0000";
+    this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+    var point_met = false;
+    var pass = false;
+    if (this.perimeters.length === 0) return;
+    if (place) {
+      temp_perimeter.push({ x: this.hLeft.x, y: this.hLeft.y });
+      for (var i = 0; i < 1.01; i += accuracy) {
+        var line_x = Math.floor((1 - i) * (1 - i) * p0.x + 2 * (1 - i) * i * top_x + i * i * p2.x);
+        var line_y = Math.floor((1 - i) * (1 - i) * p0.y + 2 * (1 - i) * i * top_y + i * i * p2.y);
+        temp_perimeter.push({ x: line_x, y: line_y });
+      }
+      console.log('temp_perimeter: ' + temp_perimeter.length);
+      console.log('perimeters: ' + this.perimeters.length);
+      console.log(this.hLeft, this.vTop, this.hRight, this.vBottom);
+      for (var i = 0; i < this.perimeters.length; i++) {
+        if (parseInt(this.perimeters[i].x) == line_x && parseInt(this.perimeters[i].y) == line_y) {
+          console.log('point met를 true로 설정: ' + i);
+          point_met = true;
+          i++;
+        }
+        if (parseInt(this.perimeters[i].x) == this.hLeft.x && parseInt(this.perimeters[i].y) == this.hLeft.y) {
+          console.log('point met를 false로 설정: ' + i);
+          point_met = false;
+          i++;
+        }
+        if (point_met) {
+          temp_perimeter.push(this.perimeters[i]);
+        }
+      }
+      this.perimeters = new Array();
+      temp_perimeter.forEach(elem => {
+        this.perimeters.push(elem);
+      });
+      this.draw(true, 'circle');
+    } else {
+      temp_perimeter.push({ x: this.hRight.x, y: this.hRight.y });
+      for (var i = 0; i < 1.01; i += accuracy) {
+        line_x = Math.floor((1 - i) * (1 - i) * p2.x + 2 * (1 - i) * i * top_x + i * i * p0.x);
+        line_y = Math.floor((1 - i) * (1 - i) * p2.y + 2 * (1 - i) * i * top_y + i * i * p0.y);
+        temp_perimeter.push({ x: line_x, y: line_y });
+      }
+      var index = 0;
+      this.perimeters.forEach(elem => {
+        if (elem.x == this.hLeft.x && elem.y == this.hLeft.y) {
+          point_met = true;
+        } else {
+          if (point_met) {
+            pass = true;
+            if (index == 0) {
+              temp_perimeter.push(this.hLeft);
+            }
+            index++;
+          }
+        }
+        if (elem.x == this.hRight.x && elem.y == this.hRight.y) {
+          point_met = false;
+        }
+        if (point_met && pass) {
+          temp_perimeter.push(elem);
+        }
+      });
+      this.perimeters = new Array();
+      temp_perimeter.forEach(elem => {
+        this.perimeters.push(elem);
+      });
+      this.draw(true, 'circle');
+    }
+  };
+
   /* magic wand기능수행시 다각형내에 다른 다각형이 놓이는 경우제거를 위한 함수 */
   findPerimetersUsingGreedy(coordsarray) {
     if (coordsarray == []) return;
@@ -706,7 +829,7 @@ export class XcopeComponent implements AfterViewInit {
     let x, y, x1, y1;
     let subid = 0;
     let array_len = coordsarray.length;
-    let x0 = coordsarray[0]['x'];
+    let x0 = coordsarray[0].x;
     let y0 = coordsarray[0]['y'];
     let distance_to_0 = 0;
     var dist = 0;
