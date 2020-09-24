@@ -49,8 +49,8 @@ export class XcopeComponent implements AfterViewInit {
   area_details_show = false;            // 다른 단위로 변환된 면적현시판 visible상태반영
   current_area = 0;                     // 현재의 면적
   square_index = 0;                     // 현재의 면적을 다른 단위면적으로 변환할 때의 10의 제곱수
-  lat = 40.730610;
-  lng = -73.935242;
+  lat = 31.224361;                      // 위도(google map)
+  lng = 121.469170;                     // 경도(google map)
   show_map = false;                     // 지도를 현시하는가 아니면 배경화상을 현시하는가를 결정하는 변수
   map_zIndex = true;                    // map이 canvas우에 놓이는가, 아래에 놓이는가를 결정하는 변수
 
@@ -65,6 +65,7 @@ export class XcopeComponent implements AfterViewInit {
 
   /* controller에서 리용하는 변수들 */
   selected_tool = '';                                       // 지금 선택된 도구의 이름. e.g. 'line', 'rectangle'...
+  last_selected_tool = '';                                  // 이전에 선택된 도구의 이름. e.g. 'line', 'rectangle'...
   perimeters = [];                                          // polygon의 점들의 배렬
   origin_x = null; origin_y = null;                         // 시작점-마우스를 눌렀을 때의 점위치
   target_x = null; target_y = null;                         // 마감점-마우스를 놓았을 때의 점위치
@@ -130,6 +131,7 @@ export class XcopeComponent implements AfterViewInit {
         this.ctx.clearRect(0, 0, this.rect.right, this.rect.bottom);
         this.sceneCtx.clearRect(0, 0, this.rect.right, this.rect.bottom);
         this.canvas.style.cursor = 'default';
+        this.show_map = false;
         break;
       case 'export':
         var blob = new Blob([JSON.stringify(this.perimeters)], { type: 'text/plain;charset=utf-8' });
@@ -145,6 +147,7 @@ export class XcopeComponent implements AfterViewInit {
         this.zoom_direction = 0;
         this.readImage(event);
         this.canvas.style.cursor = 'default';
+        this.show_map = false;
         break;
       case 'hand':
         this.canvas.style.cursor = 'move';
@@ -153,7 +156,6 @@ export class XcopeComponent implements AfterViewInit {
         this.perimeters = [];
         break;
       case 'plus':
-        console.log('확대/축소', this.zoom_scale);
         this.line_tool_card_display = false;
         this.magic_wand_tool_card_display = false;
         if (this.perimeters.length == 0) {
@@ -161,10 +163,11 @@ export class XcopeComponent implements AfterViewInit {
           return;
         }
         this.perimeters_list.push(this.perimeters);
-        if (this.selected_tool == 'circle') {
+        if (this.last_selected_tool == 'circle') {
+          console.log('+ - circle정점추가');
           this.points_list.push([this.hRight, this.vBottom, this.hLeft, this.vTop]);
-        } else if (this.selected_tool == 'pen') {
-          this.points_list.push(this.perimeters[0]);
+        } else if (this.last_selected_tool == 'pen') {
+          this.points_list.push([this.perimeters[0]]);
         } else {
           this.points_list.push(this.perimeters);
         }
@@ -176,11 +179,24 @@ export class XcopeComponent implements AfterViewInit {
       case 'area_plus':
         if (this.perimeters_list.length < this.area_length) {
           this.perimeters_list.push(this.perimeters);
+          if (this.last_selected_tool == 'circle') {
+            this.points_list.push([this.hRight, this.vBottom, this.hLeft, this.vTop]);
+          } else if (this.last_selected_tool == 'pen') {
+            this.points_list.push(this.perimeters[0]);
+          } else {
+            this.points_list.push(this.perimeters);
+          }
         }
         this.perimeters = [];
         this.selected_area = parseInt(event.target.innerText);
         this.perimeters_list[this.selected_area - 1].forEach(element => this.perimeters.push(element));
+        // 도형그리기
         this.draw(true, 'area_plus');
+        // 정점그리기
+        this.points_list[this.selected_area - 1].forEach(element => {
+          this.point(element.x, element.y);
+        });
+        // 면적현시
         this.calculateAreaDetails(this.calculateAreaPerimeter(this.perimeters).area)
         break;
       case 'zoom_in':
@@ -197,6 +213,7 @@ export class XcopeComponent implements AfterViewInit {
         this.line_tool_card_display = false;
         this.magic_wand_tool_card_display = false;
         this.map_zIndex = false;
+        this.last_selected_tool = tool;
         this.uncaptureEvents();
         this.captureEvents(this.canvas, tool);
         this.perimeters = [];

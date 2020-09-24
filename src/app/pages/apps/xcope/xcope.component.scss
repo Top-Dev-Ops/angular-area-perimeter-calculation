@@ -35,6 +35,7 @@ agm-map {
   left: 2rem;
   width: 9rem;
   z-index: 1000;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
 }
 
 .hide-canvas {
@@ -43,6 +44,7 @@ agm-map {
   left: 2rem;
   width: 9rem;
   z-index: 1000;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
 }
 
 .main-tool {
@@ -53,6 +55,7 @@ agm-map {
   background-color: white;
   border-radius: 1em;
   z-index: 900;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
 }
 .line-tool {
   width: 4.5rem;
@@ -144,6 +147,7 @@ span.scale-span {
   bottom: 30px;
   z-index: 1000;
   flex-direction: row;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
 }
 .area-plus {
   float: left;
