@@ -192,6 +192,7 @@ export class XcopeComponent implements AfterViewInit {
         // 도형그리기
         this.draw(true, 'area_plus');
         // 정점그리기
+        console.log(this.points_list[this.selected_area - 1]);
         this.points_list[this.selected_area - 1].forEach(element => {
           this.point(element.x, element.y);
         });
