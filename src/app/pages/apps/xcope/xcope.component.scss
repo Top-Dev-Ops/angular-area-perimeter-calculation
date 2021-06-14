@@ -8,11 +8,22 @@
 }
 agm-map {
   position: absolute;
-  top: 0;
+  top: 3.5rem;
   left: 0;
   height: 100%;
   width: 100%;
   z-index: 2;
+}
+.search-location {
+  position: absolute;
+  top: 4.2rem;
+  left: 13rem;
+  z-index: 10;
+  line-height: 1.4em;
+  font-size: 16px;
+  padding: 6px 5px;
+  border: 2px solid black;
+  border-radius: 5px;
 }
 
 .custom-navbar {
@@ -32,16 +43,16 @@ agm-map {
 .hide-image {
   position: absolute;
   top: 5.5rem;
-  left: 2rem;
+  left: 1rem;
   width: 9rem;
   z-index: 1000;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
 }
 
 .hide-canvas {
   position: absolute;
   top: 8rem;
-  left: 2rem;
+  left: 1rem;
   width: 9rem;
   z-index: 1000;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);

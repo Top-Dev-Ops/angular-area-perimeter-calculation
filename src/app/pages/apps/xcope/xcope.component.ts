@@ -1,9 +1,10 @@
-import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
-import { fromEvent, Observable } from 'rxjs';
-import { switchMap, takeUntil, pairwise } from 'rxjs/operators';
+import { Component, AfterViewInit, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { fromEvent } from 'rxjs';
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions } from '@angular/material/tooltip';
 import { saveAs } from 'file-saver';
 import MagicWand from 'magic-wand-tool';
+import html2canvas from 'html2canvas';
+import { MapsAPILoader } from '@agm/core';
 
 export const tooltipDefaults: MatTooltipDefaultOptions = {
   showDelay: 200,
@@ -20,84 +21,138 @@ export const tooltipDefaults: MatTooltipDefaultOptions = {
 
 export class XcopeComponent implements AfterViewInit {
 
-  /* html의 element들 */
+  /* html elements */
   @ViewChild('canvas') canvasElement: ElementRef;
   @ViewChild('canvas_background') sceneElement: ElementRef;
   @ViewChild('background') imgElement: ElementRef;
   @ViewChild('map') mapElement: ElementRef;
+  @ViewChild('search') searchElement: ElementRef;
 
-  /* html의 element들로부터 얻어내는 객체변수들 */
+  /* object variables from html elements */
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private scene: HTMLCanvasElement;
   private sceneCtx: CanvasRenderingContext2D;
   private rect = null;
 
-  /* html과 련결된 변수들(ng-model like) */
-  line_tool_card_display = false;       // line도구의 세부도구card현시상태를 반영
-  magic_wand_tool_card_display = false; // magic wand도구의 세부도구card현시상태를 반영
-  scale_factor = 5;                     // 지도의 축적상태(default값 1:5)
-  selected_unit = 'cm';                 // 지도의 단위(cm, m, in)
+  /* variables used in html (ng-model like) */
+  line_tool_card_display = false;       // display status for card of detailed tools of line
+  magic_wand_tool_card_display = false; // display status for card of detailed tools of magic wand
+  scale_factor = 5;                     // scale factor of map(default 1:5)
+  selected_unit = 'cm';                 // unit(cm, m, in)
   hide_canvas = 'HIDE CANVAS';          // HIDE CANVAS / SHOW CANVAS
   hide_image = 'HIDE IMAGE';            // HIDE IMAGE / SHOW IMAGE
-  area_length = 1;                      // +단추(화면오른쪽아래)를 눌러 확장한 둘레/면적현시판의 길이(최대 10)
-  perimeters_list = [];                 // 10개의 다각형들의 정점들의 배렬(area_length길이까지 배렬값저장, 나머지는 빈배렬)
-  points_list = [];                     // 10개의 다각형들의 표시정점들의 배렬(area_length길이까지 배렬값저장, 나머지는 빈배렬)
-  perimeter_list = [];                  // 10개의 다각형들의 둘레길이배렬(area_length길이까지 배렬값저장, 나머지는 0)
-  area_list = [];                       // 10개의 다각형들의 면적배렬(area_length길이까지 배렬값저장, 나머지는 0)
-  selected_area = 1;                    // 10개중 지금 선택된 둘레/면적현시판의 첨수
-  area_details_show = false;            // 다른 단위로 변환된 면적현시판 visible상태반영
-  current_area = 0;                     // 현재의 면적
-  square_index = 0;                     // 현재의 면적을 다른 단위면적으로 변환할 때의 10의 제곱수
-  lat = 31.224361;                      // 위도(google map)
-  lng = 121.469170;                     // 경도(google map)
-  show_map = false;                     // 지도를 현시하는가 아니면 배경화상을 현시하는가를 결정하는 변수
-  map_zIndex = true;                    // map이 canvas우에 놓이는가, 아래에 놓이는가를 결정하는 변수
+  area_length = 1;                      // length of perimeter/area panel by clicking + button(at the bottom right) - max: 10
+  perimeters_list = [];                 // perimeters' aray of 10 polygons(stores perimeters by the length of area_length, the remaining is empty)
+  points_list = [];                     // points' array of 10 polygons(stores points by the length of area_length, the remaining is empty)
+  perimeter_list = [];                  // perimeter array of 10 polygons(stores perimeter by the length of area_length, the remaining is 0)
+  area_list = [];                       // area array of 10 polygons(stores area by the length of area_length, the remaining is 0)
+  selected_area = 1;                    // index of the selected perimeter/area panel out of 10
+  area_details_show = false;            // visible status of area panel converted by other unit
+  current_area = 0;                     // current area
+  square_index = 0;                     // square index of 10 when converting current area to another
+  lat = 31.224361;                      // latitude(google map)
+  lng = 121.469170;                     // longitude(google map)
+  show_map = false;                     // decides to display map or background
+  map_zIndex = true;                    // decides if map is placed on canvas or under
+  address: string;
+  private geoCoder;
 
-  /* canvas에 대한 mouse사건들 */
+  /* mouse events on canvas */
   mousedown = null;
   mousemove = null;
   mouseup = null;
   mousewheel = null;
-  /* mousemove시 마우스가 눌리워져있는가를 검사하는 변수 */
+  /* decides whether the mouse is clicked when mousemove */
   isMouseDown = false;
   isDraggable = false;
 
-  /* controller에서 리용하는 변수들 */
-  selected_tool = '';                                       // 지금 선택된 도구의 이름. e.g. 'line', 'rectangle'...
-  last_selected_tool = '';                                  // 이전에 선택된 도구의 이름. e.g. 'line', 'rectangle'...
-  perimeters = [];                                          // polygon의 점들의 배렬
-  origin_x = null; origin_y = null;                         // 시작점-마우스를 눌렀을 때의 점위치
-  target_x = null; target_y = null;                         // 마감점-마우스를 놓았을 때의 점위치
-  zoom_scale = 1;                                           // 배경화상의 확대/축소비률(mouse wheel사건시 변화, 1.1의 제곱수)
-  zoom_direction = 0;                                       // 배경화상의 확대/축소방향(zoom_in: 1, zoom_out: -1, 기타: 0)
-  drag_start: any;                                          // 배경화상을 pan할 때 마우스클릭점위치
-  hLeft = null; hRight = null; vTop = null; vBottom = null; // 원을 그릴 때 원의 수평 및 수직점들
-  imageInfo = null;                                         // scene(배경화상)의 모든 정보값포함(imageInfo에 기초하여 magic wand기능수행)
-  mask = null;                                              // magic wand기능수행시 리용변수
+  /* variables used in controller */
+  selected_tool = '';                                       // currently selected tool. e.g. 'line', 'rectangle'...
+  last_selected_tool = '';                                  // lastly selected tool. e.g. 'line', 'rectangle'...
+  perimeters = [];                                          // array of points of polygon
+  origin_x = null; origin_y = null;                         // start point - point position when mouse is clicked
+  target_x = null; target_y = null;                         // end point - point position when mouse is released
+  zoom_scale = 1;                                           // zoom scale of background image(changes when mouse wheel, square of 1.1)
+  zoom_direction = 0;                                       // direction of zoom of background(zoom_in: 1, zoom_out: -1, otherwise: 0)
+  drag_start: any;                                          // mouse click poing when panning background
+  hLeft = null; hRight = null; vTop = null; vBottom = null; // horizontal and vertical points when drawing a circle
+  imageInfo = null;                                         // includes all information of scene(background - performs magic wand function based on imageInfo)
+  mask = null;                                              // variable when performing magic wand
   selected_vertex_id = -1;
 
-  constructor() {
+  constructor(private mapsAPILoader: MapsAPILoader, private ngZone: NgZone) {
     for (var i = 0; i < 10; i++) {
       this.perimeter_list.push(0);
       this.area_list.push(0);
     }
+    this.setCurrentLocation();
   }
 
-  /* 모든 변수의 초기화 */
+  /* initializes all variables */
   ngAfterViewInit() {
     this.canvas = this.canvasElement.nativeElement;
     this.scene = this.sceneElement.nativeElement;
-    this.canvas.width = window.innerWidth - 280; // 280: left sidebar너비
+    this.canvas.width = window.innerWidth - 280; // 280: left sidebar width
     this.canvas.height = window.innerHeight;
     this.scene.width = window.innerWidth - 280;
     this.scene.height = window.innerHeight;
     this.ctx = this.canvas.getContext('2d');
     this.sceneCtx = this.scene.getContext('2d');
     this.rect = this.canvas.getBoundingClientRect();
+
+    this.mapsAPILoader.load().then(() => {
+      // this.setCurrentLocation();
+      this.geoCoder = new google.maps.Geocoder;
+
+      let autocomplete = new google.maps.places.Autocomplete(this.searchElement.nativeElement);
+      autocomplete.addListener("place_changed", () => {
+        this.ngZone.run(() => {
+          let place: google.maps.places.PlaceResult = autocomplete.getPlace();
+          if (place.geometry === undefined || place.geometry === null) { return; }
+
+          this.lat = place.geometry.location.lat();
+          this.lng = place.geometry.location.lng();
+        });
+      });
+    });
   }
 
-  /* 기본도구를 선택할 때 세부도구선택card의 현시 및 비현시, 세부도구선택, 또한 topbar의 settings메뉴 및 세부메뉴선택 */
+  /* gets current location of the user */
+  private setCurrentLocation() {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(position => {
+        this.lat = position.coords.latitude;
+        this.lng = position.coords.longitude;
+        this.getAddress(this.lat, this.lng);
+      });
+    }
+  }
+
+  markerDragEnd($event: any) {
+    console.log($event);
+    this.lat = $event.coords.lat;
+    this.lng = $event.coords.lng;
+    this.getAddress(this.lat, this.lng);
+  }
+
+  /* gets address with latitude and longitude */
+  getAddress(latitude, longitude) {
+    this.geoCoder.geocode({ 'location': { lat: latitude, lng: longitude } }, (results, status) => {
+      console.log(results, status);
+      if (status === 'OK') {
+        if (results[0]) {
+          this.address = results[0].formatted_address;
+        } else {
+          window.alert('No results found.');
+        }
+      } else {
+        window.alert('Geocoder failed due to: ' + status);
+      }
+    });
+  }
+
+  /* shows/hides the detailed tools card when clicking the primary tool, selects the tool, shows/hides settings menu of topbar... */
   openTool(tool: string, event = null) {
     this.selected_tool = tool;
     switch (tool) {
@@ -139,8 +194,13 @@ export class XcopeComponent implements AfterViewInit {
         this.canvas.style.cursor = 'default';
         break;
       case 'print':
-        window.print();
         this.canvas.style.cursor = 'default';
+        html2canvas(document.body).then(function (canvas) {
+          var tWindow = window.open('');
+          tWindow.document.body.appendChild(canvas);
+          tWindow.focus();
+          tWindow.print();
+        });
         break;
       case 'import':
         this.zoom_scale = 1;
@@ -159,7 +219,7 @@ export class XcopeComponent implements AfterViewInit {
         this.line_tool_card_display = false;
         this.magic_wand_tool_card_display = false;
         if (this.perimeters.length == 0) {
-          alert('다음 판으로 이동하려면 도형을 먼저 그려야 합니다.');
+          alert('Please draw a polygon to move to another canvas.');
           return;
         }
         this.perimeters_list.push(this.perimeters);
@@ -189,15 +249,11 @@ export class XcopeComponent implements AfterViewInit {
         this.perimeters = [];
         this.selected_area = parseInt(event.target.innerText);
         this.perimeters_list[this.selected_area - 1].forEach(element => this.perimeters.push(element));
-        // 도형그리기
-        this.draw(true, 'area_plus');
-        // 정점그리기
-        console.log(this.points_list[this.selected_area - 1]);
-        this.points_list[this.selected_area - 1].forEach(element => {
+        this.draw(true, 'area_plus');                                                 // draws a polygon
+        this.points_list[this.selected_area - 1].forEach(element => {                 // highlights a point
           this.point(element.x, element.y);
         });
-        // 면적현시
-        this.calculateAreaDetails(this.calculateAreaPerimeter(this.perimeters).area)
+        this.calculateAreaDetails(this.calculateAreaPerimeter(this.perimeters).area); // displays the area
         break;
       case 'zoom_in':
         this.canvas.style.cursor = 'zoom-in';
@@ -208,6 +264,10 @@ export class XcopeComponent implements AfterViewInit {
         this.canvas.style.cursor = 'zoom-out';
         this.uncaptureEvents();
         this.captureEvents(this.canvas, tool);
+        break;
+      case 'show_map':
+        this.show_map = !this.show_map;
+        this.map_zIndex = true;
         break;
       default:
         this.line_tool_card_display = false;
@@ -221,33 +281,37 @@ export class XcopeComponent implements AfterViewInit {
     }
   }
 
-  /* import메뉴를 눌러 배경화상선택후 화상을 읽어 화면에 현시 */
+  /* displays the image in the scene after selecting the background by clicking import menu */
   readImage(event) {
     if (event.target.files && event.target.files[0]) {
-      var reader = new FileReader();
-      reader.onload = e => {
-        this.sceneCtx.clearRect(0, 0, this.rect.left, this.rect.bottom);
-        this.imgElement.nativeElement.src = e.target.result;
-        var width = this.imgElement.nativeElement.width;
-        var height = this.imgElement.nativeElement.height;
-        this.imageInfo = {
-          width: this.canvas.width,
-          height: this.canvas.height,
-          context: this.ctx
-        };
-        setTimeout(() => {
-          this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.rect.right - width - 280) / 2, (this.rect.bottom - height - 70) / 2);
-          this.imageInfo.data = this.sceneCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        }, 500);
+      if (event.target.files[0].name.includes('.pdf')) {    // pdf
+        console.log('selects pdf');
+      } else {                                              // image
+        var reader = new FileReader();
+        reader.onload = e => {
+          this.sceneCtx.clearRect(0, 0, this.rect.left, this.rect.bottom);
+          this.imgElement.nativeElement.src = e.target.result;
+          var width = this.imgElement.nativeElement.width;
+          var height = this.imgElement.nativeElement.height;
+          this.imageInfo = {
+            width: this.canvas.width,
+            height: this.canvas.height,
+            context: this.ctx
+          };
+          setTimeout(() => {
+            this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.rect.right - width - 280) / 2, (this.rect.bottom - height - 70) / 2);
+            this.imageInfo.data = this.sceneCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+          }, 500);
+        }
+        reader.readAsDataURL(event.target.files[0]);
       }
-      reader.readAsDataURL(event.target.files[0]);
     }
   }
 
-  /* canvas의 mouse사건함수 subscribe: 사용자가 도구를 선택하였을 때에만 사건이 활성화 */
+  /* canvas mouse event subscribe: activated when the user selects the tool */
   private captureEvents(canvasEl: HTMLCanvasElement, _selected_tool: string) {
 
-    /* canvas에 대한 mousedown */
+    /* canvas mousedown */
     this.mousedown = fromEvent(canvasEl, 'mousedown').subscribe((res: MouseEvent) => {
       var x = res.clientX - this.rect.left;
       var y = res.clientY - this.rect.top;
@@ -255,13 +319,13 @@ export class XcopeComponent implements AfterViewInit {
         case 'line':
           if (this.perimeters.length > 0 && this.checkPerimeterPointClicked(x, y, this.perimeters) == 0) {
             if (this.perimeters.length == 2) {
-              alert('다각형을 구성하려면 적어도 3개의 점이 필요합니다.');
+              alert('You need at least 3 points to draw a polygon.');
               return false;
             }
             x = this.perimeters[0].x;
             y = this.perimeters[0].y;
             if (this.checkIntersects(x, y)) {
-              alert('오유: 당신이 그리고있는 선이 다른 선과 교차합니다.');
+              alert('Error: The line you are drawing is intersecting other lines.');
               return false;
             }
             this.draw(true, _selected_tool);
@@ -273,10 +337,10 @@ export class XcopeComponent implements AfterViewInit {
             return false;
           }
           if (this.perimeters.length > 0 && x == this.perimeters[this.perimeters.length - 1]['x'] && y == this.perimeters[this.perimeters.length - 1]['y']) {
-            return false; // 같은 점을 double click
+            return false; // double clicked the same point
           }
           if (this.checkIntersects(x, y)) {
-            alert('오유: 당신이 그리고있는 선이 다른 선과 교차합니다.');
+            alert('Error: The line you are drawing is intersecting other lines.');
             return false;
           }
           this.perimeters.push({ x: x, y: y });
@@ -335,7 +399,7 @@ export class XcopeComponent implements AfterViewInit {
       }
     });
 
-    /* canvas에 대한 mouseup */
+    /* canvas mouseup */
     this.mouseup = fromEvent(canvasEl, 'mouseup').subscribe((res: MouseEvent) => {
       switch (_selected_tool) {
         case 'rectangle':
@@ -359,7 +423,7 @@ export class XcopeComponent implements AfterViewInit {
       }
     });
 
-    /* canvas에 대한 mousemove */
+    /* canvas mousemove */
     this.mousemove = fromEvent(canvasEl, 'mousemove').subscribe((res: MouseEvent) => {
       var x = res.clientX - this.rect.left;
       var y = res.clientY - this.rect.top;
@@ -427,13 +491,14 @@ export class XcopeComponent implements AfterViewInit {
           if (this.drag_start) {
             var pt = { x: res.offsetX || x, y: res.offsetY || y };
             this.sceneCtx.translate(pt.x - this.drag_start.x, pt.y - this.drag_start.y);
+            this.drag_start = { x: x, y: y };
             this.redraw();
           }
           break;
       }
     });
 
-    /* canvas에 대한 mousewheel */
+    /* canvas mousewheel */
     this.mousewheel = fromEvent(canvasEl, 'mousewheel').subscribe((res: WheelEvent) => {
       var delta = res.deltaY ? res.deltaY / 120 : res.detail ? -res.detail : 0;
       this.uncaptureEvents();
@@ -452,14 +517,14 @@ export class XcopeComponent implements AfterViewInit {
     });
   }
 
-  /* canvas의 mouse사건함수 unsubscribe: 사건비활성화 */
+  /* canvas mouse events unsubscribe: deactivates */
   private uncaptureEvents() {
     if (this.mousedown != null) this.mousedown.unsubscribe();
     if (this.mouseup != null) this.mouseup.unsubscribe();
     if (this.mousemove != null) this.mousemove.unsubscribe();
   }
 
-  /* 배경화상의 확대/축소실현 */
+  /* zooms background */
   private zoom() {
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     var xform = svg.createSVGMatrix();
@@ -485,7 +550,7 @@ export class XcopeComponent implements AfterViewInit {
     this.imageInfo.data = this.sceneCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  /* 정점들의 배렬 perimeters[]에 기초하여 다각형그리는 함수 */
+  /* draws a polygon based on perimeters[] */
   private draw(end: boolean, _selected_tool: string) {
     this.ctx.lineWidth = 1;
     this.ctx.lineCap = 'square';
@@ -566,13 +631,13 @@ export class XcopeComponent implements AfterViewInit {
           break;
         }
         this.perimeters = [];
-        var radiusX = (this.target_x - this.origin_x) * 0.5;  // x반경
-        var radiusY = (this.target_y - this.origin_y) * 0.5;  // y반경
-        var centerX = this.origin_x + radiusX;                // 중심점 x좌표
-        var centerY = this.origin_y + radiusY;                // 중심점 y좌표
-        var step = 0.01;                                      // 타원(원)의 걸음수
+        var radiusX = (this.target_x - this.origin_x) * 0.5;  // x radius
+        var radiusY = (this.target_y - this.origin_y) * 0.5;  // y radius
+        var centerX = this.origin_x + radiusX;                // center x coordinate
+        var centerY = this.origin_y + radiusY;                // center y coordinate
+        var step = 0.01;                                      // step when drawing a ellipse(circle)
         var a = step;                                         // counter
-        var pi2 = Math.PI * 2 - step;                         // 마감각도
+        var pi2 = Math.PI * 2 - step;                         // end angle
         this.hRight = { x: centerX + radiusX, y: centerY };
         for (; a < pi2; a += step) {
           if (a <= Math.PI / 2 + step && a >= Math.PI / 2 - step) {
@@ -638,7 +703,7 @@ export class XcopeComponent implements AfterViewInit {
     }
   }
 
-  /* 정점들의 배렬 perimeters[]에 기초하여 다각형의 매 변의 길이를 현시하는 함수 */
+  /* displays the length of every edge based on perimeters[] */
   private drawLabels(end: boolean = false) {
     if (this.perimeters.length == 1) return;
     let temp_perimeters = [];
@@ -683,24 +748,23 @@ export class XcopeComponent implements AfterViewInit {
     }
   }
 
-  /* 두 점의 위치정보에 기초하여 두 점사이 길이를 현시하는 본문의 위치, 각도계산함수 */
+  /* calculates the position of text for displaying the length based on position of 2 points, calculates angle */
   private getLenMpAngle(point1 = null, point2 = null) {
     if (point1.x == null || point2.x == null || point1.y == null || point2.y == null) return;
     var len = Math.sqrt(Math.pow((point1.x - point2.x), 2) + Math.pow((point1.y - point2.y), 2));
     var mid_point = { x: Math.floor(point1.x + point2.x) / 2, y: Math.floor(point1.y + point2.y) / 2 };
     let vect = { 'x': point1.x - point2.x, 'y': point1.y - point2.y };
     let angle = Math.atan(vect['y'] / vect['x']);
-    // return { len: (len / this.zoom_scale).toFixed(2), mp: mid_point, ang: angle };
     return { len: (len / this.zoom_scale).toFixed(2), mp: mid_point, ang: angle };
   }
 
-  /* 점하이라이트함수: 좌표가 주어질 때 점주위에 직사각형을 그려주는 함수 */
+  /* highlights the point: draws a rectangle around the point when coordinates are given */
   private point(x: number, y: number) {
     this.ctx.fillStyle = 'red';
     this.ctx.fillRect(x - 3, y - 3, 6, 6);
   }
 
-  /* 배경화상정보에 기초하여 magic wand에 해당한 다각형그리는 함수 */
+  /* draws a polygon corresponding to magic wand based on background image */
   drawMask(x: number, y: number) {
     if (!this.imageInfo) return;
     var image = {
@@ -714,10 +778,9 @@ export class XcopeComponent implements AfterViewInit {
     this.drawBorder();
   }
 
-  /* magic wand에 의해 선택되는 도형의 경계그리기 및 경계점들을 정점배렬 perimeters[]에 보관하는 함수 */
+  /* draws the edges of the polygon selected by magic wand, saves points array to perimeters[] */
   drawBorder() {
     if (!this.mask) return;
-    console.log('drawBorder함수내부');
     var x, y, i, j, k, w = this.imageInfo.width, h = this.imageInfo.height;
     var context = this.imageInfo.context;
     var imgData = context.createImageData(w, h);
@@ -728,8 +791,8 @@ export class XcopeComponent implements AfterViewInit {
     var coordsarray = [];
     for (j = 0; j < len; j++) {
       i = cacheInd[j];
-      x = i % w; // calc x by index
-      y = (i - x) / w; // calc y by index
+      x = i % w;          // calc x by index
+      y = (i - x) / w;    // calc y by index
       k = (y * w + x) * 4;
       res[k + 3] = 255;
       coordsarray.push({ x: x, y: y });
@@ -743,7 +806,7 @@ export class XcopeComponent implements AfterViewInit {
     this.draw(true, this.selected_tool);
   }
 
-  /* 원의 top 및 bottom점을 이동할 때 left와 right점에 기초하여 마우스점을 통과하는 bezier곡선을 구성하는 함수 */
+  /* draws a bezier curve that passes the left and right points when moving top and bottom points */
   bezierCurve(p0, p1, p2, place) {
     var temp_perimeter = new Array();
     var top_x = Math.floor(2 * p1.x - p0.x / 2 - p2.x / 2);
@@ -768,12 +831,12 @@ export class XcopeComponent implements AfterViewInit {
       console.log(this.hLeft, this.vTop, this.hRight, this.vBottom);
       for (var i = 0; i < this.perimeters.length; i++) {
         if (parseInt(this.perimeters[i].x) == line_x && parseInt(this.perimeters[i].y) == line_y) {
-          console.log('point met를 true로 설정: ' + i);
+          console.log('set point met to true: ' + i);
           point_met = true;
           i++;
         }
         if (parseInt(this.perimeters[i].x) == this.hLeft.x && parseInt(this.perimeters[i].y) == this.hLeft.y) {
-          console.log('point met를 false로 설정: ' + i);
+          console.log('set point met to false: ' + i);
           point_met = false;
           i++;
         }
@@ -821,7 +884,7 @@ export class XcopeComponent implements AfterViewInit {
     }
   };
 
-  /* magic wand기능수행시 다각형내에 다른 다각형이 놓이는 경우제거를 위한 함수 */
+  /* eliminates the case that the polygon is placed on another polygon when performing magic wand */
   findPerimetersUsingGreedy(coordsarray) {
     if (coordsarray == []) return;
     let id = 0;
@@ -857,7 +920,7 @@ export class XcopeComponent implements AfterViewInit {
       if (min_distance > distance_to_0 && id > (array_len * 2 / 3)) {
         return coordsarray.slice(0, id);
       }
-      if (id_array.length !== 0) {  // 값교환 
+      if (id_array.length !== 0) {  // swaps the value
         let swap_id = id_array[id_array.length - 1];
         let tmp = {};
         tmp['x'] = coordsarray[id + 1]['x'];
@@ -873,7 +936,7 @@ export class XcopeComponent implements AfterViewInit {
     return coordsarray;
   }
 
-  /* line들사이 교차(충돌)여부검사: 아래의 lineIntersects()를 호출 */
+  /* checks whether lines are intersecting: calls lineIntersects() below */
   checkIntersects(x: number, y: number) {
     if (this.perimeters.length < 4) { return false; }
     var p0 = new Array();
@@ -896,7 +959,7 @@ export class XcopeComponent implements AfterViewInit {
     return false;
   }
 
-  /* 4개의 점의 교차여부검사 */
+  /* checks whether 4 points are conflicting */
   lineIntersects(p0, p1, p2, p3) {
     var s1_x, s1_y, s2_x, s2_y;
     s1_x = p1['x'] - p0['x'];
@@ -906,11 +969,11 @@ export class XcopeComponent implements AfterViewInit {
     var s, t;
     s = (-s1_y * (p0['x'] - p2['x']) + s1_x * (p0['y'] - p2['y'])) / (-s2_x * s1_y + s1_x * s2_y);
     t = (s2_x * (p0['y'] - p2['y']) - s2_y * (p0['x'] - p2['x'])) / (-s2_x * s1_y + s1_x * s2_y);
-    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) { return true; }  // 충돌검출
-    return false;                                               // 충돌없음
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) { return true; }  // detects conflict
+    return false;                                               // no conflict
   }
 
-  /* 점(x, y)이 perimeters[]배렬에 이미 있는가 즉 사용자가 이미 그린 점을 다시 click했을 여부검사 */
+  /* checks if point(x, y) exists in perimeters[] array, i.e. checks if the user clicked the point already drawn */
   checkPerimeterPointClicked(x, y, perimeters) {
     var len = -1;
     if (perimeters != null) {
@@ -926,7 +989,7 @@ export class XcopeComponent implements AfterViewInit {
     return len;
   }
 
-  /* 정점들의 배렬 perimeters[]에 기초하여 다각형의 면적계산 */
+  /* calculates the area of polygon based on perimeters[] */
   calculateAreaPerimeter(coordsarray) {
     var area = 0;
     var perimeter_length = 0;
@@ -947,7 +1010,7 @@ export class XcopeComponent implements AfterViewInit {
     return result;
   }
 
-  /* 주어진 면적값을 각이한 단위의 면적값으로 변환하는 함수 */
+  /* converts the current area to other units */
   calculateAreaDetails(area) {
     this.current_area = area;
     this.square_index = 0;
@@ -961,7 +1024,7 @@ export class XcopeComponent implements AfterViewInit {
     this.current_area = parseFloat((area / (10 ** this.square_index)).toFixed(2));
   }
 
-  /* 배경화상재그리기 */
+  /* redraws the background image */
   redraw() {
     var p1 = { x: 0, y: 0 };
     var p2 = { x: this.scene.width, y: this.scene.height };
@@ -969,5 +1032,10 @@ export class XcopeComponent implements AfterViewInit {
     var width = this.imgElement.nativeElement.width;
     var height = this.imgElement.nativeElement.height;
     this.sceneCtx.drawImage(this.imgElement.nativeElement, (this.rect.right - width - 280) / 2, (this.rect.bottom - height - 70) / 2);
+  }
+
+  /* initializes the variables */
+  initializeVariables() {
+    this.show_map = false;
   }
 }

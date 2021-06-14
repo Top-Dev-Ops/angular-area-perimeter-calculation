@@ -33,7 +33,9 @@ import { AgmCoreModule } from '@agm/core';
       useFactory: adapterFactory
     }),
     AgmCoreModule.forRoot({
-      apiKey: 'AIzaSyBXwQ8Q_I-thHKC0mTz9NstrXIeEC_JCYU'
+      apiKey: 'AIzaSyBXwQ8Q_I-thHKC0mTz9NstrXIeEC_JCYU',
+      // apiKey: 'AIzaSyBXwQ8Q_I-thHKC0mTz9NstrXIeEC_JCYU',
+      libraries: ['geometry', 'places']
     }),
     MatDialogModule,
     MatButtonModule,
