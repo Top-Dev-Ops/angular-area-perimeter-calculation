@@ -51,8 +51,11 @@ export class XcopeComponent implements AfterViewInit {
   area_details_show = false;            // visible status of area panel converted by other unit
   current_area = 0;                     // current area
   square_index = 0;                     // square index of 10 when converting current area to another
-  lat = 31.224361;                      // latitude(google map)
-  lng = 121.469170;                     // longitude(google map)
+  // lat = 31.224361;                      // latitude(google map)
+  // lng = 121.469170;                     // longitude(google map)
+  // lat & lng of Regent Street, London, UK
+  lat = 51.5108;
+  lng = -0.1387;
   show_map = false;                     // decides to display map or background
   map_zIndex = true;                    // decides if map is placed on canvas or under
   address: string;

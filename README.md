@@ -1,5 +1,10 @@
 # angular-area-perimeter-calculation
-Area and perimeter calculation web page inside Angular Vex template
+Roof and perimeter calculation web page inside Angular Vex template<br />
+Available in [https://angular-area-perimeter-calculation.vercel.app/apps/xcope](https://angular-area-perimeter-calculation.vercel.app/apps/xcope)<br />
+Measures area and perimeter based on map images and google map.
+
+![working on google map](https://github.com/Top-Dev-Ops/angular-area-perimeter-calculation/src/assets/working-on-google-map.gif)
+![working on pictures](https://github.com/Top-Dev-Ops/angular-area-perimeter-calculation/src/assets/working-on-image.gif)
 
 ## Available Scripts
 
